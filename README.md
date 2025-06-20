@@ -73,6 +73,9 @@ Treza App is a secure platform for managing enclaves and automated tasks with bl
    AWS_SECRET_ACCESS_KEY=your-secret-key
    NEXT_PUBLIC_PRIVY_APP_ID=your-privy-app-id
    PRIVY_APP_SECRET=your-privy-secret
+   GITHUB_CLIENT_ID=your-github-client-id
+   GITHUB_CLIENT_SECRET=your-github-client-secret
+   GITHUB_REDIRECT_URI=your-github-redirect-uri
    ```
 
 3. **Run the development server:**
@@ -185,6 +188,9 @@ AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 NEXT_PUBLIC_PRIVY_APP_ID
 PRIVY_APP_SECRET
+GITHUB_CLIENT_ID
+GITHUB_CLIENT_SECRET
+GITHUB_REDIRECT_URI
 ```
 
 ## Contributing
