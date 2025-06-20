@@ -6,6 +6,8 @@ import localFont from "next/font/local";
 import SidePanel from "@/components/ui/side-panel";
 import PrivyWrapper from "@/components/providers/privy-provider";
 
+import { Analytics } from "@vercel/analytics/next"
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -89,6 +91,7 @@ export default function RootLayout({
             </main>
           </div>
         </PrivyWrapper>
+        <Analytics />
       </body>
     </html>
   );
