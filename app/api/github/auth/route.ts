@@ -4,7 +4,6 @@ const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || `${process.env.NEXTAUTH_URL}/api/github/callback`;
 
-
 // Initiate GitHub OAuth flow
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
