@@ -21,6 +21,13 @@ interface Enclave {
   walletAddress: string;
   createdAt: string;
   updatedAt: string;
+  githubConnection?: {
+    isConnected: boolean;
+    username: string;
+    selectedRepo?: string;
+    selectedBranch?: string;
+    accessToken?: string;
+  };
 }
 
 // Mock data - replace with DynamoDB queries
@@ -33,7 +40,13 @@ let mockEnclaves: Enclave[] = [
     region: 'us-east-1',
     walletAddress: 'mock-wallet-address',
     createdAt: '2024-01-15T00:00:00Z',
-    updatedAt: '2024-01-15T00:00:00Z'
+    updatedAt: '2024-01-15T00:00:00Z',
+    githubConnection: {
+      isConnected: true,
+      username: 'example-user',
+      selectedRepo: 'example-user/trading-bot',
+      selectedBranch: 'main'
+    }
   }
 ];
 
@@ -65,7 +78,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, region, walletAddress } = body;
+    const { name, description, region, walletAddress, githubConnection } = body;
 
     if (!name || !description || !region || !walletAddress) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -79,7 +92,8 @@ export async function POST(request: NextRequest) {
       walletAddress,
       status: 'pending',
       createdAt: getCurrentTimestamp(),
-      updatedAt: getCurrentTimestamp()
+      updatedAt: getCurrentTimestamp(),
+      ...(githubConnection && { githubConnection })
     };
 
     await putItem(TABLES.ENCLAVES, newEnclave);
@@ -94,29 +108,41 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, description, region, walletAddress } = body;
+    const { id, name, description, region, walletAddress, githubConnection } = body;
 
     if (!id || !walletAddress) {
       return NextResponse.json({ error: 'ID and wallet address required' }, { status: 400 });
     }
 
+    // Build update expression and attribute values
+    let updateExpression = 'SET #name = :name, #description = :description, #region = :region, updatedAt = :updatedAt';
+    const expressionAttributeValues: any = {
+      ':name': name,
+      ':description': description,
+      ':region': region,
+      ':updatedAt': getCurrentTimestamp(),
+      ':walletAddress': walletAddress
+    };
+    const expressionAttributeNames: any = {
+      '#name': 'name',
+      '#description': 'description',
+      '#region': 'region'
+    };
+
+    if (githubConnection) {
+      updateExpression += ', githubConnection = :githubConnection';
+      expressionAttributeValues[':githubConnection'] = githubConnection;
+    } else {
+      updateExpression += ' REMOVE githubConnection';
+    }
+
     const result = await updateItem(
       TABLES.ENCLAVES,
       { id },
-      'SET #name = :name, #description = :description, #region = :region, updatedAt = :updatedAt',
-      {
-        ':name': name,
-        ':description': description,
-        ':region': region,
-        ':updatedAt': getCurrentTimestamp(),
-        ':walletAddress': walletAddress
-      },
+      updateExpression,
+      expressionAttributeValues,
       'walletAddress = :walletAddress',
-      {
-        '#name': 'name',
-        '#description': 'description',
-        '#region': 'region'
-      }
+      expressionAttributeNames
     );
 
     if (!result.Attributes) {
