@@ -60,17 +60,18 @@ export const metadata = {
     ],
   },
   manifest: '/manifest.json',
-  themeColor: '#000000',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Treza',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#000000',
 };
 
 export default function RootLayout({

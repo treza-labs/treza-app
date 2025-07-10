@@ -1,0 +1,1203 @@
+openapi: 3.0.0
+info:
+  title: Treza Platform API
+  description: API for managing secure enclaves, GitHub integrations, and platform resources
+  version: 1.0.0
+  contact:
+    name: Treza Support
+    url: https://treza.com
+servers:
+  - url: https://app.treza.xyz
+    description: Production server
+  - url: http://localhost:3001
+    description: Development server
+
+paths:
+  /api/enclaves:
+    get:
+      summary: Get user enclaves
+      description: Retrieve all enclaves associated with a wallet address
+      tags:
+        - Enclaves
+      parameters:
+        - name: wallet
+          in: query
+          required: true
+          description: Wallet address to filter enclaves
+          schema:
+            type: string
+            example: "alexdaro34@gmail.com"
+      responses:
+        '200':
+          description: List of enclaves
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enclaves:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Enclave'
+        '400':
+          description: Missing wallet address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      summary: Create new enclave
+      description: Create a new secure enclave
+      tags:
+        - Enclaves
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - region
+                - walletAddress
+                - providerId
+              properties:
+                name:
+                  type: string
+                  example: "Trading Bot Enclave"
+                description:
+                  type: string
+                  example: "Secure environment for automated trading strategies"
+                region:
+                  type: string
+                  example: "us-east-1"
+                walletAddress:
+                  type: string
+                  example: "alexdaro34@gmail.com"
+                providerId:
+                  type: string
+                  example: "aws-nitro"
+                providerConfig:
+                  type: object
+                  example: {
+                    "dockerImage": "my-app:latest",
+                    "cpuCount": 2,
+                    "memoryMiB": 512
+                  }
+                githubConnection:
+                  $ref: '#/components/schemas/GitHubConnection'
+      responses:
+        '201':
+          description: Enclave created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enclave:
+                    $ref: '#/components/schemas/Enclave'
+        '400':
+          description: Missing required fields or invalid provider configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update enclave
+      description: Update an existing enclave
+      tags:
+        - Enclaves
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - walletAddress
+              properties:
+                id:
+                  type: string
+                  example: "enc_123456"
+                name:
+                  type: string
+                  example: "Updated Enclave Name"
+                description:
+                  type: string
+                  example: "Updated description"
+                region:
+                  type: string
+                  example: "us-west-2"
+                walletAddress:
+                  type: string
+                  example: "alexdaro34@gmail.com"
+                providerId:
+                  type: string
+                  example: "aws-nitro"
+                providerConfig:
+                  type: object
+                  example: {
+                    "dockerImage": "my-app:v2",
+                    "cpuCount": 4,
+                    "memoryMiB": 1024
+                  }
+                githubConnection:
+                  $ref: '#/components/schemas/GitHubConnection'
+      responses:
+        '200':
+          description: Enclave updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enclave:
+                    $ref: '#/components/schemas/Enclave'
+        '400':
+          description: Missing required fields or invalid provider configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Enclave not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      summary: Delete enclave
+      description: Delete an existing enclave
+      tags:
+        - Enclaves
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Enclave ID to delete
+          schema:
+            type: string
+            example: "enc_123456"
+        - name: wallet
+          in: query
+          required: true
+          description: Wallet address for authorization
+          schema:
+            type: string
+            example: "alexdaro34@gmail.com"
+      responses:
+        '200':
+          description: Enclave deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Enclave deleted successfully"
+        '400':
+          description: Missing required parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Enclave not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/providers:
+    get:
+      summary: Get available providers
+      description: Retrieve all available enclave providers or a specific provider by ID
+      tags:
+        - Providers
+      parameters:
+        - name: id
+          in: query
+          required: false
+          description: Specific provider ID to retrieve
+          schema:
+            type: string
+            example: "aws-nitro"
+      responses:
+        '200':
+          description: Provider(s) retrieved successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      providers:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Provider'
+                  - type: object
+                    properties:
+                      provider:
+                        $ref: '#/components/schemas/Provider'
+        '404':
+          description: Provider not found (when requesting specific provider)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/github/auth:
+    get:
+      summary: Initiate GitHub OAuth flow
+      description: Get GitHub OAuth authorization URL
+      tags:
+        - GitHub
+      parameters:
+        - name: state
+          in: query
+          required: false
+          description: Optional state parameter for OAuth flow
+          schema:
+            type: string
+      responses:
+        '200':
+          description: GitHub OAuth URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authUrl:
+                    type: string
+                    format: uri
+                    example: "https://github.com/login/oauth/authorize?client_id=..."
+                  state:
+                    type: string
+                    example: "abc123"
+        '500':
+          description: GitHub client ID not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      summary: Exchange OAuth code for access token
+      description: Exchange GitHub OAuth authorization code for access token
+      tags:
+        - GitHub
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  description: OAuth authorization code from GitHub
+                  example: "abcdef123456"
+                state:
+                  type: string
+                  description: State parameter from OAuth flow
+                  example: "abc123"
+      responses:
+        '200':
+          description: Access token obtained successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: "gho_xxxxxxxxxxxxxxxxxxxx"
+                  user:
+                    $ref: '#/components/schemas/GitHubUser'
+        '400':
+          description: Invalid authorization code or other OAuth error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: GitHub OAuth not configured or internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/github/callback:
+    get:
+      summary: GitHub OAuth callback
+      description: Handle GitHub OAuth callback and redirect to platform
+      tags:
+        - GitHub
+      parameters:
+        - name: code
+          in: query
+          required: false
+          description: OAuth authorization code
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          description: OAuth state parameter
+          schema:
+            type: string
+        - name: error
+          in: query
+          required: false
+          description: OAuth error if any
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to platform page with success or error parameters
+
+  /api/github/repositories:
+    get:
+      summary: Get user repositories
+      description: Fetch GitHub repositories for authenticated user
+      tags:
+        - GitHub
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: GitHub access token
+          schema:
+            type: string
+            example: "gho_xxxxxxxxxxxxxxxxxxxx"
+      responses:
+        '200':
+          description: List of repositories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  repositories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Repository'
+        '400':
+          description: Access token required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      summary: Get repository branches
+      description: Fetch branches for a specific repository
+      tags:
+        - GitHub
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accessToken
+                - repository
+              properties:
+                accessToken:
+                  type: string
+                  example: "gho_xxxxxxxxxxxxxxxxxxxx"
+                repository:
+                  type: string
+                  example: "username/repo-name"
+      responses:
+        '200':
+          description: List of branches
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  branches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Branch'
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/api-keys:
+    get:
+      summary: Get API keys
+      description: Retrieve all API keys for the authenticated user
+      tags:
+        - API Keys
+      parameters:
+        - name: wallet
+          in: query
+          required: true
+          description: Wallet address to filter API keys
+          schema:
+            type: string
+            example: "alexdaro34@gmail.com"
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKeys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
+        '400':
+          description: Missing wallet address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      summary: Create API key
+      description: Create a new API key with specified permissions
+      tags:
+        - API Keys
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - permissions
+                - walletAddress
+              properties:
+                name:
+                  type: string
+                  example: "Production API Key"
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                    enum: [enclaves:read, enclaves:write, tasks:read, tasks:write, logs:read]
+                  example: ["enclaves:read", "tasks:read"]
+                walletAddress:
+                  type: string
+                  example: "alexdaro34@gmail.com"
+      responses:
+        '201':
+          description: API key created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKey:
+                    $ref: '#/components/schemas/ApiKey'
+        '400':
+          description: Missing required fields or invalid permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update API key
+      description: Update an existing API key
+      tags:
+        - API Keys
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - walletAddress
+              properties:
+                id:
+                  type: string
+                  example: "key_123456"
+                name:
+                  type: string
+                  example: "Updated API Key Name"
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                    enum: [enclaves:read, enclaves:write, tasks:read, tasks:write, logs:read]
+                  example: ["enclaves:read", "enclaves:write"]
+                status:
+                  type: string
+                  enum: [active, inactive]
+                  example: "active"
+                walletAddress:
+                  type: string
+                  example: "alexdaro34@gmail.com"
+      responses:
+        '200':
+          description: API key updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKey:
+                    $ref: '#/components/schemas/ApiKey'
+        '400':
+          description: Missing required fields or invalid permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: API key not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete API key
+      description: Delete an existing API key
+      tags:
+        - API Keys
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: API key ID to delete
+          schema:
+            type: string
+            example: "key_123456"
+        - name: wallet
+          in: query
+          required: true
+          description: Wallet address for authorization
+          schema:
+            type: string
+            example: "alexdaro34@gmail.com"
+      responses:
+        '200':
+          description: API key deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "API key deleted successfully"
+        '400':
+          description: Missing required parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: API key not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/tasks:
+    get:
+      summary: Get tasks
+      description: Retrieve tasks for the authenticated user, optionally filtered by enclave
+      tags:
+        - Tasks
+      parameters:
+        - name: wallet
+          in: query
+          required: true
+          description: Wallet address to filter tasks
+          schema:
+            type: string
+            example: "alexdaro34@gmail.com"
+        - name: enclave
+          in: query
+          required: false
+          description: Optional enclave ID to filter tasks
+          schema:
+            type: string
+            example: "enc_123456"
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+        '400':
+          description: Missing wallet address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      summary: Create task
+      description: Create a new task within an enclave
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - enclaveId
+                - schedule
+                - walletAddress
+              properties:
+                name:
+                  type: string
+                  example: "Daily Price Monitor"
+                description:
+                  type: string
+                  example: "Monitor cryptocurrency prices and send alerts"
+                enclaveId:
+                  type: string
+                  example: "enc_123456"
+                schedule:
+                  type: string
+                  example: "0 9 * * *"
+                  description: "Cron-style schedule expression"
+                walletAddress:
+                  type: string
+                  example: "alexdaro34@gmail.com"
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update task
+      description: Update an existing task
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - walletAddress
+              properties:
+                id:
+                  type: string
+                  example: "task_123456"
+                name:
+                  type: string
+                  example: "Updated Task Name"
+                description:
+                  type: string
+                  example: "Updated task description"
+                schedule:
+                  type: string
+                  example: "0 */6 * * *"
+                status:
+                  type: string
+                  enum: [running, stopped, failed, pending]
+                  example: "running"
+                walletAddress:
+                  type: string
+                  example: "alexdaro34@gmail.com"
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Task not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete task
+      description: Delete an existing task
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Task ID to delete
+          schema:
+            type: string
+            example: "task_123456"
+        - name: wallet
+          in: query
+          required: true
+          description: Wallet address for authorization
+          schema:
+            type: string
+            example: "alexdaro34@gmail.com"
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Task deleted successfully"
+        '400':
+          description: Missing required parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Task not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Enclave:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "enc_123456"
+        name:
+          type: string
+          example: "Trading Bot Enclave"
+        description:
+          type: string
+          example: "Secure environment for automated trading strategies"
+        status:
+          type: string
+          enum: [active, inactive, pending]
+          example: "pending"
+        region:
+          type: string
+          example: "us-east-1"
+        walletAddress:
+          type: string
+          example: "alexdaro34@gmail.com"
+        providerId:
+          type: string
+          example: "aws-nitro"
+          description: "The ID of the provider used for this enclave"
+        providerConfig:
+          type: object
+          example: {
+            "dockerImage": "my-app:latest",
+            "cpuCount": 2,
+            "memoryMiB": 512
+          }
+          description: "Provider-specific configuration settings"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        githubConnection:
+          $ref: '#/components/schemas/GitHubConnection'
+
+    Provider:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "aws-nitro"
+        name:
+          type: string
+          example: "AWS Nitro Enclaves"
+        description:
+          type: string
+          example: "Secure isolated compute environments using AWS Nitro technology"
+        regions:
+          type: array
+          items:
+            type: string
+          example: ["us-east-1", "us-west-2", "eu-west-1"]
+        configSchema:
+          type: object
+          description: "Schema defining the configuration options for this provider"
+          example: {
+            "dockerImage": {
+              "type": "string",
+              "label": "Docker Image",
+              "required": true,
+              "description": "Container image to deploy"
+            },
+            "cpuCount": {
+              "type": "number",
+              "label": "CPU Count",
+              "defaultValue": 2,
+              "validation": { "min": 1, "max": 8 }
+            }
+          }
+    
+    GitHubConnection:
+      type: object
+      properties:
+        isConnected:
+          type: boolean
+          example: true
+        username:
+          type: string
+          example: "example-user"
+        selectedRepo:
+          type: string
+          example: "example-user/trading-bot"
+        selectedBranch:
+          type: string
+          example: "main"
+        accessToken:
+          type: string
+          example: "gho_xxxxxxxxxxxxxxxxxxxx"
+    
+    GitHubUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        login:
+          type: string
+          example: "username"
+        name:
+          type: string
+          example: "John Doe"
+        avatar_url:
+          type: string
+          format: uri
+          example: "https://avatars.githubusercontent.com/u/12345"
+    
+    Repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123456
+        name:
+          type: string
+          example: "my-repo"
+        fullName:
+          type: string
+          example: "username/my-repo"
+        description:
+          type: string
+          example: "A sample repository"
+        private:
+          type: boolean
+          example: false
+        defaultBranch:
+          type: string
+          example: "main"
+        language:
+          type: string
+          example: "TypeScript"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        htmlUrl:
+          type: string
+          format: uri
+          example: "https://github.com/username/my-repo"
+    
+    Branch:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "main"
+        commit:
+          type: object
+          properties:
+            sha:
+              type: string
+              example: "abc123def456"
+            url:
+              type: string
+              format: uri
+              example: "https://api.github.com/repos/username/repo/commits/abc123def456"
+    
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "task_123456"
+        name:
+          type: string
+          example: "Daily Price Monitor"
+        description:
+          type: string
+          example: "Monitor cryptocurrency prices and send alerts"
+        enclaveId:
+          type: string
+          example: "enc_123456"
+        status:
+          type: string
+          enum: [running, stopped, failed, pending]
+          example: "pending"
+        schedule:
+          type: string
+          example: "0 9 * * *"
+          description: "Cron-style schedule expression"
+        walletAddress:
+          type: string
+          example: "alexdaro34@gmail.com"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        lastRun:
+          type: string
+          format: date-time
+          example: "2024-01-15T09:00:00Z"
+          description: "Timestamp of last execution (optional)"
+
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "key_123456"
+        name:
+          type: string
+          example: "Production API Key"
+        key:
+          type: string
+          example: "sk_live_1234567890abcdef1234567890abcdef"
+          description: "The actual API key (only returned on creation)"
+        keyHash:
+          type: string
+          example: "sha256_hash_of_key"
+          description: "SHA256 hash of the API key for storage"
+        permissions:
+          type: array
+          items:
+            type: string
+            enum: [enclaves:read, enclaves:write, tasks:read, tasks:write, logs:read]
+          example: ["enclaves:read", "tasks:read"]
+        status:
+          type: string
+          enum: [active, inactive]
+          example: "active"
+        walletAddress:
+          type: string
+          example: "alexdaro34@gmail.com"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        lastUsed:
+          type: string
+          format: date-time
+          example: "2024-01-15T12:30:00Z"
+          description: "Timestamp of last usage (optional)"
+    
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error message"
+        details:
+          type: array
+          items:
+            type: string
+          description: "Additional error details (optional)"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    
+    WalletAuth:
+      type: apiKey
+      in: query
+      name: wallet
+      description: Wallet address for authentication
+
+security:
+  - BearerAuth: []
+  - WalletAuth: []
+
+tags:
+  - name: Enclaves
+    description: Secure enclave management
+  - name: Providers
+    description: Enclave provider information
+  - name: GitHub
+    description: GitHub integration and OAuth
+  - name: API Keys
+    description: API key management with permissions and authentication
+  - name: Tasks
+    description: Task scheduling and management within enclaves 

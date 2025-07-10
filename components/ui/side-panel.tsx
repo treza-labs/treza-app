@@ -237,10 +237,10 @@ export default function SidePanel() {
   );
 
   return (
-    <>
+    <div>
       <MobileMenuButton />
       <DesktopSidePanel />
       <MobileSidePanel />
-    </>
+    </div>
   );
 } 

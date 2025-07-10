@@ -8,10 +8,9 @@ import {
   updateItem,
   deleteItem
 } from '@/lib/dynamodb';
+import { getProvider, providerRegistry } from '@/lib/providers';
 
-// Mock DynamoDB operations - replace with actual AWS SDK calls
-// You would typically install @aws-sdk/client-dynamodb and @aws-sdk/lib-dynamodb
-
+// Updated interface with provider support
 interface Enclave {
   id: string;
   name: string;
@@ -21,6 +20,9 @@ interface Enclave {
   walletAddress: string;
   createdAt: string;
   updatedAt: string;
+  // Provider fields
+  providerId: string;
+  providerConfig: { [key: string]: any };
   githubConnection?: {
     isConnected: boolean;
     username: string;
@@ -29,26 +31,6 @@ interface Enclave {
     accessToken?: string;
   };
 }
-
-// Mock data - replace with DynamoDB queries
-let mockEnclaves: Enclave[] = [
-  {
-    id: '1',
-    name: 'Trading Bot Enclave',
-    description: 'Secure environment for automated trading strategies',
-    status: 'active',
-    region: 'us-east-1',
-    walletAddress: 'mock-wallet-address',
-    createdAt: '2024-01-15T00:00:00Z',
-    updatedAt: '2024-01-15T00:00:00Z',
-    githubConnection: {
-      isConnected: true,
-      username: 'example-user',
-      selectedRepo: 'example-user/trading-bot',
-      selectedBranch: 'main'
-    }
-  }
-];
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,10 +60,30 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, region, walletAddress, githubConnection } = body;
+    const { name, description, region, walletAddress, providerId, providerConfig, githubConnection } = body;
 
-    if (!name || !description || !region || !walletAddress) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!name || !description || !region || !walletAddress || !providerId) {
+      return NextResponse.json({ error: 'Missing required fields (name, description, region, walletAddress, providerId)' }, { status: 400 });
+    }
+
+    // Validate provider exists
+    const provider = getProvider(providerId);
+    if (!provider) {
+      return NextResponse.json({ error: `Provider ${providerId} not found` }, { status: 400 });
+    }
+
+    // Validate region is supported by provider
+    if (!provider.regions.includes(region)) {
+      return NextResponse.json({ error: `Region ${region} not supported by provider ${providerId}` }, { status: 400 });
+    }
+
+    // Validate provider configuration
+    const configValidation = provider.validateConfig(providerConfig || {});
+    if (!configValidation.isValid) {
+      return NextResponse.json({ 
+        error: 'Invalid provider configuration', 
+        details: configValidation.errors 
+      }, { status: 400 });
     }
 
     const newEnclave: Enclave = {
@@ -90,6 +92,8 @@ export async function POST(request: NextRequest) {
       description,
       region,
       walletAddress,
+      providerId,
+      providerConfig: providerConfig || {},
       status: 'pending',
       createdAt: getCurrentTimestamp(),
       updatedAt: getCurrentTimestamp(),
@@ -108,31 +112,73 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, description, region, walletAddress, githubConnection } = body;
+    const { id, name, description, region, walletAddress, providerId, providerConfig, githubConnection } = body;
 
     if (!id || !walletAddress) {
       return NextResponse.json({ error: 'ID and wallet address required' }, { status: 400 });
     }
 
+    // If provider is being updated, validate it
+    if (providerId) {
+      const provider = getProvider(providerId);
+      if (!provider) {
+        return NextResponse.json({ error: `Provider ${providerId} not found` }, { status: 400 });
+      }
+
+      // Validate region is supported by provider
+      if (region && !provider.regions.includes(region)) {
+        return NextResponse.json({ error: `Region ${region} not supported by provider ${providerId}` }, { status: 400 });
+      }
+
+      // Validate provider configuration
+      if (providerConfig) {
+        const configValidation = provider.validateConfig(providerConfig);
+        if (!configValidation.isValid) {
+          return NextResponse.json({ 
+            error: 'Invalid provider configuration', 
+            details: configValidation.errors 
+          }, { status: 400 });
+        }
+      }
+    }
+
     // Build update expression and attribute values
-    let updateExpression = 'SET #name = :name, #description = :description, #region = :region, updatedAt = :updatedAt';
+    let updateExpression = 'SET updatedAt = :updatedAt';
     const expressionAttributeValues: any = {
-      ':name': name,
-      ':description': description,
-      ':region': region,
       ':updatedAt': getCurrentTimestamp(),
       ':walletAddress': walletAddress
     };
-    const expressionAttributeNames: any = {
-      '#name': 'name',
-      '#description': 'description',
-      '#region': 'region'
-    };
+    const expressionAttributeNames: any = {};
+
+    // Add fields to update if provided
+    if (name) {
+      updateExpression += ', #name = :name';
+      expressionAttributeValues[':name'] = name;
+      expressionAttributeNames['#name'] = 'name';
+    }
+    if (description) {
+      updateExpression += ', #description = :description';
+      expressionAttributeValues[':description'] = description;
+      expressionAttributeNames['#description'] = 'description';
+    }
+    if (region) {
+      updateExpression += ', #region = :region';
+      expressionAttributeValues[':region'] = region;
+      expressionAttributeNames['#region'] = 'region';
+    }
+    if (providerId) {
+      updateExpression += ', providerId = :providerId';
+      expressionAttributeValues[':providerId'] = providerId;
+    }
+    if (providerConfig) {
+      updateExpression += ', providerConfig = :providerConfig';
+      expressionAttributeValues[':providerConfig'] = providerConfig;
+    }
 
     if (githubConnection) {
       updateExpression += ', githubConnection = :githubConnection';
       expressionAttributeValues[':githubConnection'] = githubConnection;
-    } else {
+    } else if (githubConnection === null) {
       updateExpression += ' REMOVE githubConnection';
     }
 
@@ -142,7 +188,7 @@ export async function PUT(request: NextRequest) {
       updateExpression,
       expressionAttributeValues,
       'walletAddress = :walletAddress',
-      expressionAttributeNames
+      Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined
     );
 
     if (!result.Attributes) {
