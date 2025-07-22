@@ -27,7 +27,7 @@ export default function Footer() {
               <li>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://treza.xyz#features"
+                  href="https://trezalabs.com#features"
                 >
                   Features
                 </a>
@@ -35,7 +35,7 @@ export default function Footer() {
               <li>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://treza.xyz#integrations"
+                  href="https://trezalabs.com#integrations"
                 >
                   Integrations
                 </a>
@@ -51,7 +51,7 @@ export default function Footer() {
               <li>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://treza.xyz/roadmap"
+                  href="https://trezalabs.com/roadmap"
                 >
                   Roadmap
                 </a>
@@ -81,7 +81,7 @@ export default function Footer() {
               <li>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://treza.xyz/team"
+                  href="https://trezalabs.com/team"
                 >
                   Team
                 </a>
@@ -97,7 +97,7 @@ export default function Footer() {
               <li>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://treza.xyz/team"
+                  href="https://trezalabs.com/team"
                 >
                   Advisors
                 </a>
@@ -105,7 +105,7 @@ export default function Footer() {
               <li>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://treza.xyz/team"
+                  href="https://trezalabs.com/team"
                 >
                   Careers
                 </a>
@@ -151,7 +151,7 @@ export default function Footer() {
               <li>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://docs.treza.xyz/use-cases/secure-key-use"
+                  href="https://docs.trezalabs.com/use-cases/secure-key-use"
                 >
                   Secure Key Use
                 </a>
@@ -159,7 +159,7 @@ export default function Footer() {
               <li>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://docs.treza.xyz/use-cases/autonomous-execution"
+                  href="https://docs.trezalabs.com/use-cases/autonomous-execution"
                 >
                   AI Agents
                 </a>
@@ -167,7 +167,7 @@ export default function Footer() {
               <li>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://docs.treza.xyz/use-cases/reactive-execution"
+                  href="https://docs.trezalabs.com/use-cases/reactive-execution"
                 >
                   Reactive Execution
                 </a>
@@ -210,7 +210,7 @@ export default function Footer() {
                 <span className="text-gray-700"> · </span>
                 <a
                   className="text-indigo-200/65 transition hover:text-indigo-500"
-                  href="https://docs.treza.xyz/terms-and-privacy/terms-of-service"
+                  href="https://docs.trezalabs.com/terms-and-privacy/terms-of-service"
                 >
                   Terms
                 </a>

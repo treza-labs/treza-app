@@ -201,7 +201,7 @@ export default function SidePanel() {
           {/* Docs Link */}
           <div className="pt-4 mt-4 border-t border-gray-800">
             <a
-              href="https://docs.treza.xyz"
+              href="https://docs.trezalabs.com"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center space-x-3 px-3 py-2 text-white hover:text-white hover:bg-gray-800 rounded-lg transition-colors cursor-pointer"
