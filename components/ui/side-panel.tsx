@@ -149,7 +149,7 @@ export default function SidePanel() {
       {/* Logo */}
       <div className="p-6 border-b border-gray-800">
         <div className="flex items-center space-x-3">
-          <Logo />
+          <Logo width={24} height={24} />
           <span className="text-xl font-bold text-white tracking-widest">T R E Z A</span>
         </div>
       </div>
