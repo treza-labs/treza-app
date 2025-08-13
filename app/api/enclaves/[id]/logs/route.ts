@@ -225,6 +225,7 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
     ];
 
     const logs = [];
+    console.log(`🔍 Fetching Lambda logs for enclave: ${enclaveId}`);
 
     for (const logGroupName of logSources) {
       try {
@@ -242,9 +243,15 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
         for (const stream of streamsResponse.logStreams || []) {
           if (stream.logStreamName) {
             try {
+              // Get logs from the last 2 hours to catch recent activity
+              const endTime = Date.now();
+              const startTime = endTime - (2 * 60 * 60 * 1000); // 2 hours ago
+              
               const getLogsCommand = new GetLogEventsCommand({
                 logGroupName,
                 logStreamName: stream.logStreamName,
+                startTime,
+                endTime,
                 limit: 20,
                 startFromHead: false
               });
@@ -252,8 +259,22 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
               const logsResponse = await cloudWatchLogs.send(getLogsCommand);
               
               for (const event of logsResponse.events || []) {
-                // Filter logs related to our enclave
-                if (event.message && event.message.includes(enclaveId)) {
+                // Filter logs related to our enclave or status monitoring activities
+                const isRelevant = event.message && (
+                  event.message.includes(enclaveId) ||
+                  // Include status monitor general logs that might be relevant
+                  (logGroupName.includes('status-monitor') && (
+                    event.message.includes('Starting enclave status monitoring') ||
+                    event.message.includes('Successfully monitored enclave statuses') ||
+                    event.message.includes('Error monitoring statuses') ||
+                    event.message.includes('Checking enclave') ||
+                    event.message.includes('Instance') ||
+                    event.message.includes('Updating enclave') ||
+                    event.message.includes('Successfully updated enclave')
+                  ))
+                );
+                
+                if (isRelevant) {
                   logs.push({
                     timestamp: event.timestamp,
                     message: event.message,
@@ -261,6 +282,11 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
                     source: 'lambda',
                     function: logGroupName.split('/').pop()
                   });
+                  
+                  // Debug logging for status monitor
+                  if (logGroupName.includes('status-monitor')) {
+                    console.log(`📋 Status monitor log found: ${event.message?.substring(0, 100)}...`);
+                  }
                 }
               }
             } catch (streamError) {
@@ -274,7 +300,10 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
     }
 
     // Sort by timestamp, most recent first
-    return logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, limit);
+    const sortedLogs = logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, limit);
+    
+    console.log(`📊 Found ${logs.length} total Lambda logs, returning ${sortedLogs.length} after limit`);
+    return sortedLogs;
 
   } catch (error) {
     console.error('Error fetching Lambda logs:', error);
