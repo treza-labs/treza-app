@@ -350,29 +350,35 @@ export default function EnclaveDetailPage() {
         {activeTab === 'logs' && (
           <div className="space-y-6">
             {/* Log Type Filter */}
-            <div className="flex gap-4">
-              {[
-                { id: 'all', label: 'All Logs' },
-                { id: 'ecs', label: 'Infrastructure (ECS)' },
-                { id: 'stepfunctions', label: 'Workflows' },
-                { id: 'lambda', label: 'Functions' }
-              ].map(type => (
-                <button
-                  key={type.id}
-                  onClick={() => setLogType(type.id as any)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    logType === type.id
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  {type.label}
-                </button>
-              ))}
+            <div className="flex justify-between items-center">
+              <div className="flex gap-4">
+                {[
+                  { id: 'all', label: 'All Logs' },
+                  { id: 'ecs', label: 'Infrastructure (ECS)' },
+                  { id: 'stepfunctions', label: 'Workflows' },
+                  { id: 'lambda', label: 'Functions' }
+                ].map(type => (
+                  <button
+                    key={type.id}
+                    onClick={() => setLogType(type.id as any)}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                      logType === type.id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+              
               <button
                 onClick={fetchLogs}
-                className="px-4 py-2 text-sm font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 rounded-md transition-colors"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors shadow-sm"
               >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
                 Refresh
               </button>
             </div>
