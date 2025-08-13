@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { usePrivy } from '@privy-io/react-auth';
+import ComingSoonModal from '@/components/ui/coming-soon-modal';
+import { isProduction } from '@/lib/environment';
 
 interface ApiKey {
   id: string;
@@ -19,6 +21,7 @@ export default function ApiKeysSection() {
   const { user } = usePrivy();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -280,8 +283,8 @@ export default function ApiKeysSection() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-white">API Keys</h2>
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="btn cursor-pointer bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]"
+          onClick={() => isProduction() ? setIsComingSoonModalOpen(true) : setIsModalOpen(true)}
+          className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
         >
           Create API Key
         </button>
@@ -386,8 +389,8 @@ export default function ApiKeysSection() {
             Create your first API key to start accessing the Treza platform programmatically.
           </p>
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn cursor-pointer bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]"
+            onClick={() => isProduction() ? setIsComingSoonModalOpen(true) : setIsModalOpen(true)}
+            className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
           >
             Create Your First API Key
           </button>
@@ -453,6 +456,14 @@ export default function ApiKeysSection() {
           </div>
         </div>
       )}
+
+      {/* Coming Soon Modal */}
+      <ComingSoonModal
+        isOpen={isComingSoonModalOpen}
+        onClose={() => setIsComingSoonModalOpen(false)}
+        featureName="API Key Creation"
+        description="We're currently preparing our API infrastructure for public launch. API key creation will be available soon with enhanced security and rate limiting capabilities."
+      />
     </div>
   );
 } 
