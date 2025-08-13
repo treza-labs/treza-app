@@ -397,9 +397,23 @@ export default function EnclaveDetailPage() {
             {/* Logs Display */}
             <div className="bg-gray-800 rounded-lg p-4">
               <div className="font-mono text-sm space-y-1 max-h-96 overflow-y-auto">
-                {logs && Object.entries(logs.logs).map(([source, logEntries]) => 
-                  logEntries?.map((log: LogEntry, index: number) => (
-                    <div key={`${source}-${index}`} className="flex gap-4 py-1 hover:bg-gray-700/50 rounded">
+                {logs && (() => {
+                  // Combine all logs from different sources into a single array
+                  const allLogs: LogEntry[] = [];
+                  
+                  Object.entries(logs.logs).forEach(([source, logEntries]) => {
+                    if (logEntries && Array.isArray(logEntries)) {
+                      allLogs.push(...logEntries);
+                    }
+                  });
+                  
+                  // Sort all logs by timestamp (most recent first)
+                  allLogs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                  
+
+                  
+                  return allLogs.map((log: LogEntry, index: number) => (
+                    <div key={`${log.source}-${index}`} className="flex gap-4 py-1 hover:bg-gray-700/50 rounded">
                       <span className="text-gray-400 text-xs w-32 flex-shrink-0">
                         {formatTimestamp(log.timestamp)}
                       </span>
@@ -415,8 +429,8 @@ export default function EnclaveDetailPage() {
                         {formatLogMessage(log.message)}
                       </span>
                     </div>
-                  ))
-                )}
+                  ));
+                })()}
                 {(!logs || Object.values(logs.logs).every(arr => !arr || arr.length === 0)) && (
                   <div className="text-gray-400 text-center py-8">
                     No logs found for this enclave

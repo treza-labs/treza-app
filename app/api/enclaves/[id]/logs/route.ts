@@ -225,7 +225,6 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
     ];
 
     const logs = [];
-    console.log(`🔍 Fetching Lambda logs for enclave: ${enclaveId}`);
 
     for (const logGroupName of logSources) {
       try {
@@ -282,11 +281,6 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
                     source: 'lambda',
                     function: logGroupName.split('/').pop()
                   });
-                  
-                  // Debug logging for status monitor
-                  if (logGroupName.includes('status-monitor')) {
-                    console.log(`📋 Status monitor log found: ${event.message?.substring(0, 100)}...`);
-                  }
                 }
               }
             } catch (streamError) {
@@ -300,10 +294,7 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
     }
 
     // Sort by timestamp, most recent first
-    const sortedLogs = logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, limit);
-    
-    console.log(`📊 Found ${logs.length} total Lambda logs, returning ${sortedLogs.length} after limit`);
-    return sortedLogs;
+    return logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, limit);
 
   } catch (error) {
     console.error('Error fetching Lambda logs:', error);
