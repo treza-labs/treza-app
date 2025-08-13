@@ -125,7 +125,13 @@ export default function EnclavesSection() {
     
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/enclaves?wallet=${encodeURIComponent(walletAddress)}`);
+      
+      // Start the API call and a minimum loading time in parallel
+      const [response] = await Promise.all([
+        fetch(`/api/enclaves?wallet=${encodeURIComponent(walletAddress)}`),
+        new Promise(resolve => setTimeout(resolve, 800)) // Minimum 800ms loading time
+      ]);
+      
       const data = await response.json();
       
       if (response.ok) {

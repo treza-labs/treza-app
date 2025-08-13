@@ -54,6 +54,7 @@ export default function EnclaveDetailPage() {
   const [logType, setLogType] = useState<'all' | 'ecs' | 'stepfunctions' | 'lambda'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   useEffect(() => {
     fetchEnclaveDetails();
@@ -94,7 +95,14 @@ export default function EnclaveDetailPage() {
 
   const fetchLogs = async () => {
     try {
-      const response = await fetch(`/api/enclaves/${enclaveId}/logs?type=${logType}&limit=100`);
+      setIsLoadingLogs(true);
+      
+      // Start the API call and a minimum loading time in parallel
+      const [response] = await Promise.all([
+        fetch(`/api/enclaves/${enclaveId}/logs?type=${logType}&limit=100`),
+        new Promise(resolve => setTimeout(resolve, 600)) // Minimum 600ms loading time
+      ]);
+      
       const data = await response.json();
       
       if (response.ok) {
@@ -104,6 +112,8 @@ export default function EnclaveDetailPage() {
       }
     } catch (error) {
       console.error('Error fetching logs:', error);
+    } finally {
+      setIsLoadingLogs(false);
     }
   };
 
@@ -374,12 +384,13 @@ export default function EnclaveDetailPage() {
               
               <button
                 onClick={fetchLogs}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-md transition-colors shadow-sm"
+                disabled={isLoadingLogs}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:opacity-50 text-gray-300 hover:text-white rounded-md transition-colors shadow-sm"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 mr-2 ${isLoadingLogs ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Refresh
+                {isLoadingLogs ? 'Refreshing...' : 'Refresh'}
               </button>
             </div>
 
