@@ -15,6 +15,7 @@
     "@aws-sdk/lib-dynamodb": "^3.830.0",
     "@headlessui/react": "^2.2.0",
     "@headlessui/tailwindcss": "^0.2.1",
+    "@heroicons/react": "^2.2.0",
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
     "@next/mdx": "15.1.6",
