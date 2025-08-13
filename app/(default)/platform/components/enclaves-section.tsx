@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { usePrivy } from '@privy-io/react-auth';
+import { useRouter } from 'next/navigation';
 import ProviderSelector from '@/components/ui/provider-selector';
 import ProviderConfigComponent from '@/components/ui/provider-config';
 import { EnclaveWithProvider, ProviderConfig } from '@/lib/providers/types';
@@ -9,6 +10,7 @@ import { getProvider } from '@/lib/providers';
 
 export default function EnclavesSection() {
   const { user } = usePrivy();
+  const router = useRouter();
   const [enclaves, setEnclaves] = useState<EnclaveWithProvider[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEnclave, setEditingEnclave] = useState<EnclaveWithProvider | null>(null);
@@ -611,6 +613,12 @@ export default function EnclavesSection() {
                       )}
                       
                       {/* Standard Actions */}
+                      <button
+                        onClick={() => router.push(`/platform/enclaves/${enclave.id}`)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-500/20 rounded-md hover:border-blue-500/40 transition-colors cursor-pointer"
+                      >
+                        View Details
+                      </button>
                       <button
                         onClick={() => handleEdit(enclave)}
                         className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 hover:text-white border border-gray-600 rounded-md hover:border-gray-500 transition-colors cursor-pointer"
