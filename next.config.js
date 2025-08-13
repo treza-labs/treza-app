@@ -8,7 +8,7 @@ const nextConfig = {
   images: {
     domains: ['d1olseq3j3ep4p.cloudfront.net'],
   },
-  // Temporarily ignore TypeScript errors during build (ox package issue)
+  // Temporarily ignore TypeScript errors during build (ox package has internal TS errors)
   typescript: {
     ignoreBuildErrors: true,
   },
