@@ -40,7 +40,7 @@ export interface EnclaveWithProvider {
   id: string;
   name: string;
   description: string;
-  status: 'active' | 'inactive' | 'pending';
+  status: 'ACTIVE' | 'INACTIVE' | 'PENDING_DEPLOY' | 'PENDING_DESTROY' | 'DEPLOYING' | 'DEPLOYED' | 'PAUSING' | 'PAUSED' | 'RESUMING' | 'DESTROYING' | 'DESTROYED' | 'FAILED';
   region: string;
   walletAddress: string;
   createdAt: string;
