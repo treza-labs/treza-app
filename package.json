@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.830.0",
+    "@aws-sdk/client-ec2": "^3.830.0",
     "@aws-sdk/lib-dynamodb": "^3.830.0",
     "@headlessui/react": "^2.2.0",
     "@headlessui/tailwindcss": "^0.2.1",
@@ -37,10 +38,10 @@
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",
-    "@tailwindcss/postcss": "^4.0.3",
     "@tailwindcss/typography": "^0.5.16",
     "@types/aos": "^3.0.7",
+    "autoprefixer": "^10.4.16",
     "postcss": "^8.5.1",
-    "tailwindcss": "^4.0.3"
+    "tailwindcss": "^3.4.0"
   }
 }

@@ -26,7 +26,37 @@ input[type='search']::-webkit-search-results-decoration {
 .form-select,
 .form-checkbox,
 .form-radio {
-    @apply border border-gray-700 bg-gray-900/50 focus:border-gray-600 focus:ring-0 focus:ring-offset-0;
+    @apply border border-gray-700 bg-gray-900 focus:border-gray-600 focus:ring-0 focus:ring-offset-0;
+}
+
+/* Force dark styling for all form inputs - more specific targeting */
+input,
+textarea,
+select {
+    @apply bg-gray-900 border-gray-700 text-gray-200 placeholder-gray-500 !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    @apply bg-gray-900 border-gray-600 ring-0 outline-none !important;
+}
+
+/* Headless UI specific overrides */
+.form-input,
+.form-textarea,
+.form-select {
+    @apply bg-gray-900 border-gray-700 text-gray-200 placeholder-gray-500 !important;
+}
+
+/* Additional targeting for modal inputs */
+[role="dialog"] input,
+[role="dialog"] textarea,
+[role="dialog"] select,
+.modal input,
+.modal textarea,
+.modal select {
+    @apply bg-gray-900 border-gray-700 text-gray-200 placeholder-gray-500 !important;
 }
 
 .form-input,
@@ -51,5 +81,5 @@ input[type='search']::-webkit-search-results-decoration {
 }
 
 .form-checkbox {
-    @apply rounded-xs;
+    @apply rounded;
 }

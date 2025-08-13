@@ -353,7 +353,7 @@ export default function TasksSection() {
         <h2 className="text-xl font-semibold text-white">Tasks</h2>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="btn cursor-pointer bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]"
+          className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
         >
           Create Task
         </button>
@@ -449,7 +449,7 @@ export default function TasksSection() {
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn cursor-pointer bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]"
+            className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
           >
             Create Your First Task
           </button>
@@ -546,7 +546,7 @@ export default function TasksSection() {
                 className={`btn flex-1 ${
                   !editingTask && enclaves.length === 0
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'cursor-pointer bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]'
+                    : 'cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors'
                 }`}
               >
                 {editingTask ? 'Update' : 'Create'}

@@ -19,11 +19,11 @@ const client = new DynamoDBClient({
 
 export const docClient = DynamoDBDocumentClient.from(client);
 
-// Table names
+// Table names - using environment variables to support different environments
 export const TABLES = {
-  ENCLAVES: 'treza-enclaves',
-  TASKS: 'treza-tasks',
-  API_KEYS: 'treza-api-keys'
+  ENCLAVES: process.env.DYNAMODB_ENCLAVES_TABLE || 'treza-enclaves-dev',
+  TASKS: process.env.DYNAMODB_TASKS_TABLE || 'treza-tasks-dev',
+  API_KEYS: process.env.DYNAMODB_API_KEYS_TABLE || 'treza-api-keys-dev'
 } as const;
 
 // Helper function to generate unique IDs

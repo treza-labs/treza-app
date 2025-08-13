@@ -370,6 +370,56 @@ export default function EnclavesSection() {
     }
   };
 
+  const handleLifecycleAction = async (id: string, action: 'pause' | 'resume' | 'terminate') => {
+    const actionVerbs = {
+      pause: 'pause',
+      resume: 'resume', 
+      terminate: 'terminate'
+    };
+    
+    const confirmMessage = action === 'terminate' 
+      ? 'Are you sure you want to terminate this enclave? This will destroy the AWS resources.'
+      : `Are you sure you want to ${actionVerbs[action]} this enclave?`;
+    
+    if (!confirm(confirmMessage) || !walletAddress) return;
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/enclaves/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          walletAddress
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Update the enclave status in the local state
+        setEnclaves(enclaves.map(e => 
+          e.id === id ? { ...e, status: data.enclave.status } : e
+        ));
+        
+        // Refresh the enclaves list after a short delay to get updated status
+        setTimeout(() => {
+          fetchEnclaves();
+        }, 2000);
+      } else {
+        console.error(`Error ${action}ing enclave:`, data.error);
+        alert(`Error ${action}ing enclave: ` + data.error);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing enclave:`, error);
+      alert(`Error ${action}ing enclave`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -389,9 +439,12 @@ export default function EnclavesSection() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-500';
-      case 'inactive': return 'bg-gray-500';
-      case 'pending': return 'bg-yellow-500';
+      case 'ACTIVE': return 'bg-green-500';
+      case 'INACTIVE': return 'bg-gray-500';
+      case 'PENDING_DEPLOY': return 'bg-yellow-500';
+      case 'PENDING_DESTROY': return 'bg-orange-500';
+      case 'DEPLOYING': return 'bg-blue-500';
+      case 'FAILED': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
   };
@@ -451,7 +504,7 @@ export default function EnclavesSection() {
         <h2 className="text-xl font-semibold text-white">Secure Enclaves</h2>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="btn cursor-pointer bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]"
+          className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
         >
           Create Enclave
         </button>
@@ -486,12 +539,21 @@ export default function EnclavesSection() {
                     <div className="text-sm text-gray-300">{getProviderName(enclave.providerId)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                      enclave.status === 'active' ? 'bg-green-500/10 text-green-400' :
-                      enclave.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      enclave.status === 'ACTIVE' ? 'bg-green-500/10 text-green-400' :
+                      enclave.status === 'DEPLOYED' ? 'bg-green-500/10 text-green-400' :
+                      enclave.status === 'PENDING_DEPLOY' ? 'bg-yellow-500/10 text-yellow-400' :
+                      enclave.status === 'PENDING_DESTROY' ? 'bg-orange-500/10 text-orange-400' :
+                      enclave.status === 'DEPLOYING' ? 'bg-blue-500/10 text-blue-400' :
+                      enclave.status === 'DESTROYING' ? 'bg-orange-500/10 text-orange-400' :
+                      enclave.status === 'PAUSING' ? 'bg-purple-500/10 text-purple-400' :
+                      enclave.status === 'PAUSED' ? 'bg-gray-500/10 text-gray-400' :
+                      enclave.status === 'RESUMING' ? 'bg-blue-500/10 text-blue-400' :
+                      enclave.status === 'DESTROYED' ? 'bg-gray-500/10 text-gray-500' :
+                      enclave.status === 'FAILED' ? 'bg-red-500/10 text-red-400' :
                       'bg-gray-500/10 text-gray-400'
                     }`}>
-                      {enclave.status}
+                      {enclave.status.replace('_', ' ').toLowerCase()}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -521,19 +583,48 @@ export default function EnclavesSection() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                    <div className="flex items-center justify-start gap-2">
+                    <div className="flex items-center justify-start gap-1">
+                      {/* Lifecycle Action Buttons */}
+                      {enclave.status === 'DEPLOYED' && (
+                        <button
+                          onClick={() => handleLifecycleAction(enclave.id, 'pause')}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition-colors cursor-pointer"
+                        >
+                          Pause
+                        </button>
+                      )}
+                      {enclave.status === 'PAUSED' && (
+                        <button
+                          onClick={() => handleLifecycleAction(enclave.id, 'resume')}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 rounded-md hover:bg-green-500/20 transition-colors cursor-pointer"
+                        >
+                          Resume
+                        </button>
+                      )}
+                      {['DEPLOYED', 'PAUSED', 'FAILED'].includes(enclave.status) && (
+                        <button
+                          onClick={() => handleLifecycleAction(enclave.id, 'terminate')}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 transition-colors cursor-pointer"
+                        >
+                          Terminate
+                        </button>
+                      )}
+                      
+                      {/* Standard Actions */}
                       <button
                         onClick={() => handleEdit(enclave)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white border border-gray-600 rounded-md hover:border-gray-500 transition-colors cursor-pointer"
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 hover:text-white border border-gray-600 rounded-md hover:border-gray-500 transition-colors cursor-pointer"
                       >
                         Edit
                       </button>
-                      <button
-                        onClick={() => handleDelete(enclave.id)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-red-400 border border-gray-600 rounded-md hover:border-red-500/50 transition-colors cursor-pointer"
-                      >
-                        Delete
-                      </button>
+                      {['DESTROYED', 'FAILED'].includes(enclave.status) && (
+                        <button
+                          onClick={() => handleDelete(enclave.id)}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 hover:text-red-400 border border-gray-600 rounded-md hover:border-red-500/50 transition-colors cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -554,7 +645,7 @@ export default function EnclavesSection() {
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn cursor-pointer bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]"
+            className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
           >
             Create Your First Enclave
           </button>
@@ -842,7 +933,7 @@ export default function EnclavesSection() {
               </button>
               <button
                 onClick={editingEnclave ? handleUpdate : handleCreate}
-                className="btn cursor-pointer flex-1 bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]"
+                className="btn cursor-pointer flex-1 bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
                 disabled={isLoading || !formData.name || !formData.description || !formData.providerId || !formData.region}
               >
                 {isLoading ? 'Processing...' : (editingEnclave ? 'Update' : 'Create')}

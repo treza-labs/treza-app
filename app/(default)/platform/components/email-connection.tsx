@@ -69,7 +69,7 @@ export default function EmailConnection({ connectedUser, setConnectedUser }: Ema
         </div>
         <button
           onClick={logout}
-          className="btn-sm cursor-pointer relative bg-linear-to-b from-gray-800 to-gray-800/60 bg-[length:100%_100%] bg-[bottom] text-gray-300 before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:border before:border-transparent before:[background:linear-gradient(to_right,var(--color-gray-800),var(--color-gray-700),var(--color-gray-800))_border-box] before:[mask-composite:exclude_!important] before:[mask:linear-gradient(white_0_0)_padding-box,_linear-gradient(white_0_0)] hover:bg-[length:100%_150%]"
+          className="btn-sm bg-gradient-to-b from-gray-800 to-gray-900 text-gray-300 hover:from-gray-700 hover:to-gray-800 transition-colors border border-gray-600 hover:border-gray-500"
         >
           Sign Out
         </button>

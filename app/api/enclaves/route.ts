@@ -15,7 +15,7 @@ interface Enclave {
   id: string;
   name: string;
   description: string;
-  status: 'active' | 'inactive' | 'pending';
+  status: 'ACTIVE' | 'INACTIVE' | 'PENDING_DEPLOY' | 'PENDING_DESTROY' | 'DEPLOYING' | 'DEPLOYED' | 'PAUSING' | 'PAUSED' | 'RESUMING' | 'DESTROYING' | 'DESTROYED' | 'FAILED';
   region: string;
   walletAddress: string;
   createdAt: string;
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       walletAddress,
       providerId,
       providerConfig: providerConfig || {},
-      status: 'pending',
+      status: 'PENDING_DEPLOY',
       createdAt: getCurrentTimestamp(),
       updatedAt: getCurrentTimestamp(),
       ...(githubConnection && { githubConnection })
