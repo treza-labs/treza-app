@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { usePrivy } from '@privy-io/react-auth';
+import ComingSoonModal from '@/components/ui/coming-soon-modal';
+import { isProduction } from '@/lib/environment';
 
 interface Task {
   id: string;
@@ -33,6 +35,7 @@ export default function TasksSection() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [enclaves, setEnclaves] = useState<Enclave[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -352,7 +355,7 @@ export default function TasksSection() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-white">Tasks</h2>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => isProduction() ? setIsComingSoonModalOpen(true) : setIsModalOpen(true)}
           className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
         >
           Create Task
@@ -448,7 +451,7 @@ export default function TasksSection() {
             Create your first automated task to start running scheduled AI operations.
           </p>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => isProduction() ? setIsComingSoonModalOpen(true) : setIsModalOpen(true)}
             className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
           >
             Create Your First Task
@@ -555,6 +558,14 @@ export default function TasksSection() {
           </div>
         </div>
       )}
+
+      {/* Coming Soon Modal */}
+      <ComingSoonModal
+        isOpen={isComingSoonModalOpen}
+        onClose={() => setIsComingSoonModalOpen(false)}
+        featureName="Task Creation"
+        description="We're currently preparing our task automation system for public launch. Task creation will be available soon with enhanced scheduling and monitoring capabilities."
+      />
     </div>
   );
 } 

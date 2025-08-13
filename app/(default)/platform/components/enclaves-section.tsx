@@ -5,14 +5,17 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 import ProviderSelector from '@/components/ui/provider-selector';
 import ProviderConfigComponent from '@/components/ui/provider-config';
+import ComingSoonModal from '@/components/ui/coming-soon-modal';
 import { EnclaveWithProvider, ProviderConfig } from '@/lib/providers/types';
 import { getProvider } from '@/lib/providers';
+import { isProduction } from '@/lib/environment';
 
 export default function EnclavesSection() {
   const { user } = usePrivy();
   const router = useRouter();
   const [enclaves, setEnclaves] = useState<EnclaveWithProvider[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
   const [editingEnclave, setEditingEnclave] = useState<EnclaveWithProvider | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isConnectingGitHub, setIsConnectingGitHub] = useState(false);
@@ -522,7 +525,7 @@ export default function EnclavesSection() {
             {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => isProduction() ? setIsComingSoonModalOpen(true) : setIsModalOpen(true)}
             className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
           >
             Create Enclave
@@ -670,7 +673,7 @@ export default function EnclavesSection() {
             Create your first secure enclave to start running AI agents in isolated environments.
           </p>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => isProduction() ? setIsComingSoonModalOpen(true) : setIsModalOpen(true)}
             className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
           >
             Create Your First Enclave
@@ -968,6 +971,14 @@ export default function EnclavesSection() {
           </div>
         </div>
       )}
+
+      {/* Coming Soon Modal */}
+      <ComingSoonModal
+        isOpen={isComingSoonModalOpen}
+        onClose={() => setIsComingSoonModalOpen(false)}
+        featureName="Enclave Creation"
+        description="We're currently preparing our infrastructure for public launch. Enclave creation will be available soon with enhanced security and monitoring capabilities."
+      />
     </div>
   );
 } 
