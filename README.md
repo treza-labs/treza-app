@@ -190,6 +190,10 @@ The platform provides RESTful APIs for all core functionality:
 
 ## Development
 
+### Documentation
+
+- **[TypeScript Fixes](docs/TYPESCRIPT_FIXES.md)** - Solutions for third-party dependency TypeScript issues
+
 ### Project Structure
 ```
 treza-app/
