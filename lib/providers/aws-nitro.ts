@@ -17,8 +17,9 @@ export const awsNitroProvider: Provider = {
     dockerImage: {
       type: 'string',
       label: 'Docker Image URI',
-      description: 'Container image to run in the enclave (e.g., hello-world)',
+      description: 'Container image to run in the enclave (e.g., nginx:alpine)',
       required: true,
+      defaultValue: 'nginx:alpine',
       validation: {
         pattern: '^[a-zA-Z0-9\\.\\-_/]+:[a-zA-Z0-9\\.\\-_]+$'
       }
