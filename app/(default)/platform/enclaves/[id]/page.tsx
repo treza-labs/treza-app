@@ -373,7 +373,7 @@ export default function EnclaveDetailPage() {
               <div className="flex gap-4">
                 {[
                   { id: 'all', label: 'All Logs' },
-                  { id: 'errors', label: '🔴 Errors' },
+                  { id: 'errors', label: 'Errors' },
                   { id: 'ecs', label: 'Infrastructure (ECS)' },
                   { id: 'stepfunctions', label: 'Workflows' },
                   { id: 'lambda', label: 'Functions' },
