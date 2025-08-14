@@ -27,7 +27,7 @@ export async function GET(
   try {
     const { id } = await params;
     const { searchParams } = new URL(request.url);
-    const logType = searchParams.get('type') || 'all'; // 'ecs', 'stepfunctions', 'lambda', 'application', 'all'
+    const logType = searchParams.get('type') || 'all'; // 'ecs', 'stepfunctions', 'lambda', 'application', 'errors', 'all'
     const limit = parseInt(searchParams.get('limit') || '100');
 
     // Get enclave details first
@@ -59,6 +59,10 @@ export async function GET(
 
     if (logType === 'all' || logType === 'application') {
       logs.logs.application = await getApplicationLogs(id, limit);
+    }
+
+    if (logType === 'all' || logType === 'errors') {
+      logs.logs.errors = await getErrorLogs(id, limit);
     }
 
     return NextResponse.json(logs);
@@ -201,15 +205,19 @@ function formatStepFunctionEvent(event: any): string {
     case 'ExecutionSucceeded':
       return `Execution completed successfully`;
     case 'ExecutionFailed':
-      return `Execution failed: ${event.executionFailedEventDetails?.error || 'Unknown error'}`;
+      const failureError = event.executionFailedEventDetails?.error || 'Unknown error';
+      const failureCause = event.executionFailedEventDetails?.cause;
+      return `❌ Execution failed: ${failureError}${failureCause ? ` - ${failureCause}` : ''}`;
     case 'TaskStateEntered':
-      return `Started task: ${event.stateEnteredEventDetails?.name || 'Unknown'}`;
+      return `➡️ Started task: ${event.stateEnteredEventDetails?.name || 'Unknown'}`;
     case 'TaskStateExited':
-      return `Completed task: ${event.stateExitedEventDetails?.name || 'Unknown'}`;
+      return `✅ Completed task: ${event.stateExitedEventDetails?.name || 'Unknown'}`;
     case 'TaskSucceeded':
-      return `Task succeeded: ${event.taskSucceededEventDetails?.resourceType || 'Unknown'}`;
+      return `✅ Task succeeded: ${event.taskSucceededEventDetails?.resourceType || 'Unknown'}`;
     case 'TaskFailed':
-      return `Task failed: ${event.taskFailedEventDetails?.error || 'Unknown error'}`;
+      const taskError = event.taskFailedEventDetails?.error || 'Unknown error';
+      const taskCause = event.taskFailedEventDetails?.cause;
+      return `❌ Task failed: ${taskError}${taskCause ? ` - ${taskCause}` : ''}`;
     case 'ChoiceStateEntered':
       return `Evaluating condition: ${event.stateEnteredEventDetails?.name || 'Unknown'}`;
     case 'TaskScheduled':
@@ -383,6 +391,88 @@ async function getApplicationLogs(enclaveId: string, limit: number) {
 
   } catch (error) {
     console.error('Error fetching application logs:', error);
+    return [];
+  }
+}
+
+async function getErrorLogs(enclaveId: string, limit: number) {
+  try {
+    const errorLogs: any[] = [];
+
+    // 1. Get Step Functions errors
+    const stepFunctionErrors = await getStepFunctionsLogs(enclaveId, limit);
+    const filteredStepFunctionErrors = stepFunctionErrors.filter((log: any) => 
+      log.message && (
+        log.message.includes('❌') || 
+        log.message.includes('failed') || 
+        log.message.includes('error') ||
+        log.type?.includes('Failed') ||
+        log.type?.includes('Error')
+      )
+    );
+    errorLogs.push(...filteredStepFunctionErrors);
+
+    // 2. Get Lambda errors  
+    const lambdaErrors = await getLambdaLogs(enclaveId, limit);
+    const filteredLambdaErrors = lambdaErrors.filter((log: any) => 
+      log.message && (
+        log.message.includes('ERROR') || 
+        log.message.includes('Exception') ||
+        log.message.includes('Failed') ||
+        log.message.includes('Error:')
+      )
+    );
+    errorLogs.push(...filteredLambdaErrors);
+
+    // 3. Get ECS/Terraform errors
+    const ecsErrors = await getECSLogs(enclaveId, limit);
+    const filteredECSErrors = ecsErrors.filter((log: any) => 
+      log.message && (
+        log.message.includes('Error:') ||
+        log.message.includes('FAILED') ||
+        log.message.includes('ERROR') ||
+        log.message.includes('Exception') ||
+        log.message.toLowerCase().includes('error') && 
+        !log.message.toLowerCase().includes('no error')
+      )
+    );
+    errorLogs.push(...filteredECSErrors);
+
+    // 4. Get application errors (stderr mainly)
+    const appLogs = await getApplicationLogs(enclaveId, limit);
+    const filteredAppErrors = appLogs.filter((log: any) => 
+      log.type === 'stderr' || (
+        log.message && (
+          log.message.includes('ERROR') ||
+          log.message.includes('Exception') ||
+          log.message.includes('Error:') ||
+          log.message.includes('FATAL')
+        )
+      )
+    );
+    errorLogs.push(...filteredAppErrors);
+
+    // 5. Check DynamoDB for error_message field
+    try {
+      const enclaveData = await getItem(TABLES.ENCLAVES, { id: enclaveId });
+      if (enclaveData.Item?.error_message) {
+        errorLogs.push({
+          timestamp: Date.now(),
+          message: `🔴 Enclave Error: ${enclaveData.Item.error_message}`,
+          source: 'dynamodb',
+          type: 'error',
+          logGroup: 'enclave-status'
+        });
+      }
+    } catch (dbError) {
+      console.warn('Error fetching enclave error from DynamoDB:', dbError);
+    }
+
+    // Sort by timestamp, most recent first
+    return errorLogs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, limit);
+
+  } catch (error) {
+    console.error('Error fetching error logs:', error);
     return [];
   }
 }

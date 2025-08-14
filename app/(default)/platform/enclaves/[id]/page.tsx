@@ -41,6 +41,7 @@ interface EnclaveLogs {
     stepfunctions?: LogEntry[];
     lambda?: LogEntry[];
     application?: LogEntry[];
+    errors?: LogEntry[];
   };
 }
 
@@ -52,7 +53,7 @@ export default function EnclaveDetailPage() {
   const [enclave, setEnclave] = useState<Enclave | null>(null);
   const [logs, setLogs] = useState<EnclaveLogs | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'config'>('overview');
-  const [logType, setLogType] = useState<'all' | 'ecs' | 'stepfunctions' | 'lambda' | 'application'>('all');
+  const [logType, setLogType] = useState<'all' | 'ecs' | 'stepfunctions' | 'lambda' | 'application' | 'errors'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
@@ -61,6 +62,13 @@ export default function EnclaveDetailPage() {
     fetchEnclaveDetails();
     fetchLogs();
   }, [enclaveId]);
+
+  // Auto-switch to errors tab if enclave has failed
+  useEffect(() => {
+    if (enclave && enclave.status === 'FAILED' && logType === 'all') {
+      setLogType('errors');
+    }
+  }, [enclave, logType]);
 
   useEffect(() => {
     fetchLogs();
@@ -365,6 +373,7 @@ export default function EnclaveDetailPage() {
               <div className="flex gap-4">
                 {[
                   { id: 'all', label: 'All Logs' },
+                  { id: 'errors', label: '🔴 Errors' },
                   { id: 'ecs', label: 'Infrastructure (ECS)' },
                   { id: 'stepfunctions', label: 'Workflows' },
                   { id: 'lambda', label: 'Functions' },
@@ -433,6 +442,8 @@ export default function EnclaveDetailPage() {
                         log.source === 'lambda' ? 'text-green-400' :
                         log.source === 'stepfunctions' ? 'text-purple-400' :
                         log.source === 'application' ? 'text-orange-400' :
+                        log.source === 'dynamodb' ? 'text-red-400' :
+                        log.type === 'error' ? 'text-red-400' :
                         'text-gray-400'
                       }`}>
                         {log.source}
