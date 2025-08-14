@@ -27,7 +27,7 @@ export async function GET(
   try {
     const { id } = await params;
     const { searchParams } = new URL(request.url);
-    const logType = searchParams.get('type') || 'all'; // 'ecs', 'stepfunctions', 'lambda', 'all'
+    const logType = searchParams.get('type') || 'all'; // 'ecs', 'stepfunctions', 'lambda', 'application', 'all'
     const limit = parseInt(searchParams.get('limit') || '100');
 
     // Get enclave details first
@@ -55,6 +55,10 @@ export async function GET(
 
     if (logType === 'all' || logType === 'lambda') {
       logs.logs.lambda = await getLambdaLogs(id, limit);
+    }
+
+    if (logType === 'all' || logType === 'application') {
+      logs.logs.application = await getApplicationLogs(id, limit);
     }
 
     return NextResponse.json(logs);
@@ -298,6 +302,87 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
 
   } catch (error) {
     console.error('Error fetching Lambda logs:', error);
+    return [];
+  }
+}
+
+async function getApplicationLogs(enclaveId: string, limit: number) {
+  try {
+    const logSources = [
+      `/aws/nitro-enclave/${enclaveId}/application`,
+      `/aws/nitro-enclave/${enclaveId}/stdout`,
+      `/aws/nitro-enclave/${enclaveId}/stderr`
+    ];
+
+    const logs = [];
+
+    for (const logGroupName of logSources) {
+      try {
+        // Get recent log streams
+        const describeStreamsCommand = new DescribeLogStreamsCommand({
+          logGroupName,
+          orderBy: 'LastEventTime',
+          descending: true,
+          limit: 3 // Recent streams only
+        });
+
+        const streamsResponse = await cloudWatchLogs.send(describeStreamsCommand);
+
+        // Get logs from each stream
+        for (const stream of streamsResponse.logStreams || []) {
+          if (stream.logStreamName) {
+            try {
+              // Get logs from the last 2 hours to catch recent activity
+              const endTime = Date.now();
+              const startTime = endTime - (2 * 60 * 60 * 1000); // 2 hours ago
+              
+              const getLogsCommand = new GetLogEventsCommand({
+                logGroupName,
+                logStreamName: stream.logStreamName,
+                startTime,
+                endTime,
+                limit: 50,
+                startFromHead: false
+              });
+
+              const logsResponse = await cloudWatchLogs.send(getLogsCommand);
+              
+              for (const event of logsResponse.events || []) {
+                if (event.message) {
+                  // Determine log type based on log group
+                  let logType = 'application';
+                  if (logGroupName.includes('/stdout')) {
+                    logType = 'stdout';
+                  } else if (logGroupName.includes('/stderr')) {
+                    logType = 'stderr';
+                  }
+
+                  logs.push({
+                    timestamp: event.timestamp,
+                    message: event.message,
+                    stream: stream.logStreamName,
+                    source: 'application',
+                    type: logType,
+                    logGroup: logGroupName
+                  });
+                }
+              }
+            } catch (streamError) {
+              console.warn(`Error fetching logs from stream ${stream.logStreamName}:`, streamError);
+            }
+          }
+        }
+      } catch (groupError) {
+        // Log group might not exist yet if no application logs have been generated
+        console.warn(`Log group ${logGroupName} not found or no access - this is normal for new enclaves`);
+      }
+    }
+
+    // Sort by timestamp, most recent first
+    return logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)).slice(0, limit);
+
+  } catch (error) {
+    console.error('Error fetching application logs:', error);
     return [];
   }
 }

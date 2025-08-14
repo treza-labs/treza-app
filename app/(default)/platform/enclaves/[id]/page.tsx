@@ -40,6 +40,7 @@ interface EnclaveLogs {
     ecs?: LogEntry[];
     stepfunctions?: LogEntry[];
     lambda?: LogEntry[];
+    application?: LogEntry[];
   };
 }
 
@@ -51,7 +52,7 @@ export default function EnclaveDetailPage() {
   const [enclave, setEnclave] = useState<Enclave | null>(null);
   const [logs, setLogs] = useState<EnclaveLogs | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'config'>('overview');
-  const [logType, setLogType] = useState<'all' | 'ecs' | 'stepfunctions' | 'lambda'>('all');
+  const [logType, setLogType] = useState<'all' | 'ecs' | 'stepfunctions' | 'lambda' | 'application'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
@@ -366,7 +367,8 @@ export default function EnclaveDetailPage() {
                   { id: 'all', label: 'All Logs' },
                   { id: 'ecs', label: 'Infrastructure (ECS)' },
                   { id: 'stepfunctions', label: 'Workflows' },
-                  { id: 'lambda', label: 'Functions' }
+                  { id: 'lambda', label: 'Functions' },
+                  { id: 'application', label: 'Application' }
                 ].map(type => (
                   <button
                     key={type.id}
@@ -398,14 +400,23 @@ export default function EnclaveDetailPage() {
             <div className="bg-gray-800 rounded-lg p-4">
               <div className="font-mono text-sm space-y-1 max-h-96 overflow-y-auto">
                 {logs && (() => {
-                  // Combine all logs from different sources into a single array
+                  // Filter and combine logs based on selected log type
                   const allLogs: LogEntry[] = [];
                   
-                  Object.entries(logs.logs).forEach(([source, logEntries]) => {
-                    if (logEntries && Array.isArray(logEntries)) {
-                      allLogs.push(...logEntries);
+                  if (logType === 'all') {
+                    // Include all log types
+                    Object.entries(logs.logs).forEach(([source, logEntries]) => {
+                      if (logEntries && Array.isArray(logEntries)) {
+                        allLogs.push(...logEntries);
+                      }
+                    });
+                  } else {
+                    // Include only selected log type
+                    const selectedLogs = logs.logs[logType];
+                    if (selectedLogs && Array.isArray(selectedLogs)) {
+                      allLogs.push(...selectedLogs);
                     }
-                  });
+                  }
                   
                   // Sort all logs by timestamp (most recent first)
                   allLogs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -421,6 +432,7 @@ export default function EnclaveDetailPage() {
                         log.source === 'ecs' ? 'text-blue-400' :
                         log.source === 'lambda' ? 'text-green-400' :
                         log.source === 'stepfunctions' ? 'text-purple-400' :
+                        log.source === 'application' ? 'text-orange-400' :
                         'text-gray-400'
                       }`}>
                         {log.source}
