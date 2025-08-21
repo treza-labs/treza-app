@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { usePrivy } from '@privy-io/react-auth';
 import EmailConnection from "./components/email-connection";
 import EnclavesSection from "./components/enclaves-section";
@@ -9,13 +10,25 @@ import ApiKeysSection from "./components/api-keys-section";
 
 export default function PlatformDashboard() {
   const { authenticated, user } = usePrivy();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [connectedUser, setConnectedUser] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'enclaves' | 'tasks' | 'api-keys'>('enclaves');
 
   // Get the actual user identifier for API calls
   const userIdentifier = authenticated && user?.email?.address ? user.email.address : null;
   
-  // Listen for navigation events from side panel
+  // Update active tab based on URL parameters
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['tasks', 'api-keys'].includes(tab)) {
+      setActiveTab(tab as 'enclaves' | 'tasks' | 'api-keys');
+    } else {
+      setActiveTab('enclaves');
+    }
+  }, [searchParams]);
+  
+  // Listen for navigation events from side panel (keep for backward compatibility)
   React.useEffect(() => {
     const handleNavigation = (event: CustomEvent) => {
       setActiveTab(event.detail);
@@ -49,7 +62,13 @@ export default function PlatformDashboard() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => {
+                  if (tab.id === 'enclaves') {
+                    router.push('/platform');
+                  } else {
+                    router.push(`/platform?tab=${tab.id}`);
+                  }
+                }}
                 className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
                   activeTab === tab.id
                     ? 'bg-indigo-500/20 text-white border border-indigo-500/30'

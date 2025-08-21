@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import NotFoundImage from "@/public/images/404.jpg";
 import PageIllustration from "@/components/page-illustration";
-import Footer from "@/components/ui/footer";
 
 export default function NotFound() {
   return (
@@ -36,7 +35,6 @@ export default function NotFound() {
           </div>
         </section>
       </main>
-      <Footer />
     </>
   );
 }

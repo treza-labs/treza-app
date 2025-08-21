@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { usePrivy } from '@privy-io/react-auth';
 import { Shield, Zap, Key, LogOut, FileText, Menu, X } from 'lucide-react';
 import { Transition } from "@headlessui/react";
@@ -9,6 +10,8 @@ import Logo from "./logo";
 
 export default function SidePanel() {
   const { authenticated, user, logout } = usePrivy();
+  const router = useRouter();
+  const pathname = usePathname();
   const [activeTab, setActiveTab] = useState<string>('enclaves');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   
@@ -16,12 +19,28 @@ export default function SidePanel() {
   const mobileNav = useRef<HTMLDivElement>(null);
 
   const menuItems = [
-    { id: 'enclaves', label: 'Enclaves', icon: Shield },
-    { id: 'tasks', label: 'Tasks', icon: Zap },
-    { id: 'api-keys', label: 'API Keys', icon: Key },
+    { id: 'enclaves', label: 'Enclaves', icon: Shield, route: '/platform' },
+    { id: 'tasks', label: 'Tasks', icon: Zap, route: '/platform?tab=tasks' },
+    { id: 'api-keys', label: 'API Keys', icon: Key, route: '/platform?tab=api-keys' },
   ];
 
-  // Listen for navigation events to sync active state
+  // Update active tab based on current route
+  useEffect(() => {
+    if (pathname.startsWith('/platform/enclaves/')) {
+      setActiveTab('enclaves');
+    } else if (pathname === '/platform') {
+      // Check URL params for tab
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab');
+      if (tab && ['tasks', 'api-keys'].includes(tab)) {
+        setActiveTab(tab);
+      } else {
+        setActiveTab('enclaves');
+      }
+    }
+  }, [pathname]);
+
+  // Listen for navigation events to sync active state (keep for backward compatibility)
   useEffect(() => {
     const handleNavigation = (event: CustomEvent) => {
       setActiveTab(event.detail);
@@ -73,8 +92,11 @@ export default function SidePanel() {
   }, [mobileMenuOpen]);
 
   const handleMenuItemClick = (itemId: string) => {
-    setActiveTab(itemId);
-    window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: itemId }));
+    const menuItem = menuItems.find(item => item.id === itemId);
+    if (menuItem) {
+      router.push(menuItem.route);
+      setMobileMenuOpen(false); // Close mobile menu when navigating
+    }
   };
 
   // Mobile Hamburger Button
@@ -214,7 +236,6 @@ export default function SidePanel() {
         </nav>
       </div>
 
-      {/* Footer */}
       <div className="p-4 border-t border-gray-800">
         {authenticated ? (
           <button

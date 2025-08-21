@@ -1,3 +1,4 @@
+
 import { Provider, ProviderConfig, ValidationResult } from './types';
 
 export const awsNitroProvider: Provider = {
@@ -17,11 +18,11 @@ export const awsNitroProvider: Provider = {
     dockerImage: {
       type: 'string',
       label: 'Docker Image URI',
-      description: 'Container image to run in the enclave (e.g., nginx:alpine)',
+      description: 'Container image to run in the enclave (e.g., hello-world, nginx:alpine)',
       required: true,
-      defaultValue: 'nginx:alpine',
+      defaultValue: 'hello-world',
       validation: {
-        pattern: '^[a-zA-Z0-9\\.\\-_/]+:[a-zA-Z0-9\\.\\-_]+$'
+        pattern: '^[a-zA-Z0-9\\.\\-_/]+:[a-zA-Z0-9\\.\\-_]+$|^[a-zA-Z0-9\\.\\-_/]+$'
       }
     },
     cpuCount: {
@@ -54,18 +55,18 @@ export const awsNitroProvider: Provider = {
     instanceType: {
       type: 'select',
       label: 'Instance Type',
-      description: 'EC2 instance type for the parent instance',
+      description: 'EC2 instance type for the parent instance (Nitro Enclave compatible)',
       required: true,
       options: [
-        { value: 'm5.large', label: 'm5.large' },
-        { value: 'm5.xlarge', label: 'm5.xlarge' },
-        { value: 'm5.2xlarge', label: 'm5.2xlarge' },
-        { value: 'm5.4xlarge', label: 'm5.4xlarge' },
-        { value: 'c5.large', label: 'c5.large' },
-        { value: 'c5.xlarge', label: 'c5.xlarge' },
-        { value: 'c5.2xlarge', label: 'c5.2xlarge' }
+        { value: 'm5.xlarge', label: 'm5.xlarge (4 vCPU, 16 GiB RAM)' },
+        { value: 'm5.2xlarge', label: 'm5.2xlarge (8 vCPU, 32 GiB RAM)' },
+        { value: 'm5.4xlarge', label: 'm5.4xlarge (16 vCPU, 64 GiB RAM)' },
+        { value: 'm5.8xlarge', label: 'm5.8xlarge (32 vCPU, 128 GiB RAM)' },
+        { value: 'c5.xlarge', label: 'c5.xlarge (4 vCPU, 8 GiB RAM)' },
+        { value: 'c5.2xlarge', label: 'c5.2xlarge (8 vCPU, 16 GiB RAM)' },
+        { value: 'c5.4xlarge', label: 'c5.4xlarge (16 vCPU, 32 GiB RAM)' }
       ],
-      defaultValue: 'm5.large'
+      defaultValue: 'm5.xlarge'
     },
     enableDebug: {
       type: 'boolean',
@@ -90,7 +91,7 @@ export const awsNitroProvider: Provider = {
     // Validate Docker image URI
     if (!config.dockerImage) {
       errors.push('Docker image URI is required');
-    } else if (!/^[a-zA-Z0-9\.\-_/]+:[a-zA-Z0-9\.\-_]+$/.test(config.dockerImage)) {
+    } else if (!/^[a-zA-Z0-9\.\-_/]+:[a-zA-Z0-9\.\-_]+$|^[a-zA-Z0-9\.\-_/]+$/.test(config.dockerImage)) {
       errors.push('Invalid Docker image URI format');
     }
     
@@ -111,6 +112,11 @@ export const awsNitroProvider: Provider = {
     // Validate instance type
     if (!config.instanceType) {
       errors.push('Instance type is required');
+    } else {
+      const validInstanceTypes = ['m5.xlarge', 'm5.2xlarge', 'm5.4xlarge', 'm5.8xlarge', 'c5.xlarge', 'c5.2xlarge', 'c5.4xlarge'];
+      if (!validInstanceTypes.includes(config.instanceType)) {
+        errors.push('Instance type must support Nitro Enclaves (minimum m5.xlarge or c5.xlarge)');
+      }
     }
     
     // Validate environment variables if provided

@@ -543,15 +543,17 @@ export default function EnclavesSection() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Provider</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Region</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">GitHub Repo</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Created</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
               {enclaves.map((enclave) => (
-                <tr key={enclave.id} className="hover:bg-gray-700/50">
+                <tr 
+                  key={enclave.id} 
+                  className="hover:bg-gray-700/50 cursor-pointer transition-colors"
+                  onClick={() => router.push(`/platform/enclaves/${enclave.id}`)}
+                >
                   <td className="px-6 py-4 whitespace-nowrap text-left">
                     <div className="text-sm font-medium text-white text-left">{enclave.name}</div>
                   </td>
@@ -579,26 +581,6 @@ export default function EnclavesSection() {
                       {enclave.status.replace('_', ' ').toLowerCase()}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-300">{formatRegion(enclave.region, enclave.providerId)}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {enclave.githubConnection ? (
-                      <div className="flex items-center">
-                        <img src="/images/github-mark-white.svg" alt="GitHub" className="w-4 h-4 mr-2" />
-                        <div className="max-w-xs">
-                          <div className="text-sm text-gray-300 truncate" title={enclave.githubConnection.selectedRepo}>
-                            {enclave.githubConnection.selectedRepo?.replace(/^https?:\/\/(www\.)?github\.com\//, '') || 'Unknown'}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {enclave.githubConnection.selectedBranch}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-500">-</div>
-                    )}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-left">
                     <div className="text-sm text-gray-300 text-left">{formatTimestamp(enclave.createdAt).date}</div>
                     {formatTimestamp(enclave.createdAt).time && (
@@ -610,7 +592,10 @@ export default function EnclavesSection() {
                       {/* Lifecycle Action Buttons */}
                       {enclave.status === 'DEPLOYED' && (
                         <button
-                          onClick={() => handleLifecycleAction(enclave.id, 'pause')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLifecycleAction(enclave.id, 'pause');
+                          }}
                           className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition-colors cursor-pointer"
                         >
                           Pause
@@ -618,7 +603,10 @@ export default function EnclavesSection() {
                       )}
                       {enclave.status === 'PAUSED' && (
                         <button
-                          onClick={() => handleLifecycleAction(enclave.id, 'resume')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLifecycleAction(enclave.id, 'resume');
+                          }}
                           className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 rounded-md hover:bg-green-500/20 transition-colors cursor-pointer"
                         >
                           Resume
@@ -626,7 +614,10 @@ export default function EnclavesSection() {
                       )}
                       {['DEPLOYED', 'PAUSED', 'FAILED'].includes(enclave.status) && (
                         <button
-                          onClick={() => handleLifecycleAction(enclave.id, 'terminate')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLifecycleAction(enclave.id, 'terminate');
+                          }}
                           className="inline-flex items-center px-2 py-1 text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 transition-colors cursor-pointer"
                         >
                           Terminate
@@ -635,20 +626,20 @@ export default function EnclavesSection() {
                       
                       {/* Standard Actions */}
                       <button
-                        onClick={() => router.push(`/platform/enclaves/${enclave.id}`)}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-500/20 rounded-md hover:border-blue-500/40 transition-colors cursor-pointer"
-                      >
-                        View Details
-                      </button>
-                      <button
-                        onClick={() => handleEdit(enclave)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(enclave);
+                        }}
                         className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 hover:text-white border border-gray-600 rounded-md hover:border-gray-500 transition-colors cursor-pointer"
                       >
                         Edit
                       </button>
                       {['DESTROYED', 'FAILED'].includes(enclave.status) && (
                         <button
-                          onClick={() => handleDelete(enclave.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(enclave.id);
+                          }}
                           className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 hover:text-red-400 border border-gray-600 rounded-md hover:border-red-500/50 transition-colors cursor-pointer"
                         >
                           Delete
