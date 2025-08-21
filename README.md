@@ -6,34 +6,6 @@
 
 Treza App is a secure platform for managing enclaves and automated tasks with blockchain wallet integration. The platform provides a comprehensive dashboard for creating isolated execution environments, scheduling tasks, and managing API access with enterprise-grade security. **Now featuring an extensible provider system that supports multiple enclave technologies including AWS Nitro Enclaves with full automation and real-time monitoring.**
 
-## ✨ Latest Features (December 2024)
-
-### 🎨 **Enhanced User Experience**
-- **Professional Design**: Removed emojis and improved visual consistency
-- **Indigo Color Scheme**: Unified design language with indigo accents throughout
-- **Improved Status Display**: Enclave status moved to header for better visibility
-- **Professional Controls**: Redesigned pause/terminate buttons with outline styling
-- **Responsive Layout**: Optimized for all screen sizes with better spacing
-
-### 📊 **Real-Time Application Logs**
-- **Instant Visibility**: Application logs appear immediately after deployment
-- **Professional Empty States**: Clear messaging when logs are loading or unavailable
-- **Improved Log Display**: Table-like formatting with better readability
-- **Loading Indicators**: Visual feedback during log retrieval
-- **Enhanced Monitoring**: Real-time status updates and log streaming
-
-### 🔄 **Fixed Lifecycle Management**
-- **Correct Termination**: Terminate button now properly shows "DESTROYING" status
-- **Status Progression**: Clear indicators: PENDING → DEPLOYING/DESTROYING → DEPLOYED/DESTROYED
-- **Reliable Operations**: Fixed backend workflows for consistent behavior
-- **Error Handling**: Better error messages and recovery options
-
-### 📋 **Streamlined Interface**
-- **Optimized Columns**: Removed redundant "GitHub Repo" and "Region" columns
-- **Smart Sorting**: Default sort by creation date for better organization
-- **Enhanced Details**: Improved enclave detail page with better layout
-- **Fixed Footer**: Resolved scrolling issues on detail pages
-
 ## Key Features
 
 ### 🔐 **Secure Authentication**
