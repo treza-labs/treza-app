@@ -1,10 +1,38 @@
 # Treza App
 
-**Secure Enclave and Task Management Platform** - Create and manage isolated execution environments with automated task scheduling. Built for secure, scalable workload management with blockchain wallet integration and **extensible provider system**.
+**Secure Enclave and Task Management Platform** - Create and manage isolated execution environments with automated task scheduling. Built for secure, scalable workload management with blockchain wallet integration and **extensible provider system**. **Now featuring enhanced UI, instant application logs, and improved enclave lifecycle management.**
 
 ## Overview
 
-Treza App is a secure platform for managing enclaves and automated tasks with blockchain wallet integration. The platform provides a comprehensive dashboard for creating isolated execution environments, scheduling tasks, and managing API access with enterprise-grade security. **Now featuring an extensible provider system that supports multiple enclave technologies including AWS Nitro Enclaves.**
+Treza App is a secure platform for managing enclaves and automated tasks with blockchain wallet integration. The platform provides a comprehensive dashboard for creating isolated execution environments, scheduling tasks, and managing API access with enterprise-grade security. **Now featuring an extensible provider system that supports multiple enclave technologies including AWS Nitro Enclaves with full automation and real-time monitoring.**
+
+## ✨ Latest Features (December 2024)
+
+### 🎨 **Enhanced User Experience**
+- **Professional Design**: Removed emojis and improved visual consistency
+- **Indigo Color Scheme**: Unified design language with indigo accents throughout
+- **Improved Status Display**: Enclave status moved to header for better visibility
+- **Professional Controls**: Redesigned pause/terminate buttons with outline styling
+- **Responsive Layout**: Optimized for all screen sizes with better spacing
+
+### 📊 **Real-Time Application Logs**
+- **Instant Visibility**: Application logs appear immediately after deployment
+- **Professional Empty States**: Clear messaging when logs are loading or unavailable
+- **Improved Log Display**: Table-like formatting with better readability
+- **Loading Indicators**: Visual feedback during log retrieval
+- **Enhanced Monitoring**: Real-time status updates and log streaming
+
+### 🔄 **Fixed Lifecycle Management**
+- **Correct Termination**: Terminate button now properly shows "DESTROYING" status
+- **Status Progression**: Clear indicators: PENDING → DEPLOYING/DESTROYING → DEPLOYED/DESTROYED
+- **Reliable Operations**: Fixed backend workflows for consistent behavior
+- **Error Handling**: Better error messages and recovery options
+
+### 📋 **Streamlined Interface**
+- **Optimized Columns**: Removed redundant "GitHub Repo" and "Region" columns
+- **Smart Sorting**: Default sort by creation date for better organization
+- **Enhanced Details**: Improved enclave detail page with better layout
+- **Fixed Footer**: Resolved scrolling issues on detail pages
 
 ## Key Features
 
@@ -15,13 +43,14 @@ Treza App is a secure platform for managing enclaves and automated tasks with bl
 
 ### 🏰 **Multi-Provider Enclave Management**
 - **Extensible provider system** supporting multiple enclave technologies
-- **AWS Nitro Enclaves** with full configuration support (Docker images, CPU allocation, memory settings)
+- **🆕 AWS Nitro Enclaves** with full automation and instant application logs
 - Plugin-like architecture for easy addition of new providers
 - Provider-specific configuration validation and UI
 - Multi-region deployment support per provider
-- Real-time status monitoring (Active, Inactive, Pending)
+- **🆕 Real-time status monitoring** (Deploying, Deployed, Destroying, Destroyed)
 - Secure workload isolation and resource allocation
 - Full CRUD operations with persistent storage
+- **🆕 Automated VPC endpoint access** for immediate log visibility
 
 ### 📋 **Task Automation**
 - Schedule automated tasks with flexible cron-based scheduling
@@ -36,10 +65,12 @@ Treza App is a secure platform for managing enclaves and automated tasks with bl
 - Usage tracking and last-used timestamps
 - Secure key rotation capabilities
 
-### 📊 **Dashboard Interface**
-- Intuitive tabbed interface for enclave and task management
+### 📊 **Enhanced Dashboard Interface**
+- **🆕 Professional Design**: Clean, consistent interface with indigo theme
+- **🆕 Improved Layout**: Better spacing and component organization
 - **Dynamic provider selection and configuration**
-- Real-time data updates and monitoring
+- **🆕 Real-time application logs** with professional empty states
+- **🆕 Optimized enclave list** with essential information only
 - Responsive design for desktop and mobile
 - Dark theme with modern UI components
 - Comprehensive resource utilization views
@@ -48,13 +79,16 @@ Treza App is a secure platform for managing enclaves and automated tasks with bl
 
 ### Supported Providers
 
-#### AWS Nitro Enclaves
-- **Docker Image Configuration**: Support for custom container images
+#### 🆕 Enhanced AWS Nitro Enclaves
+- **🆕 Instant Application Logs**: Real-time log visibility through automated CloudWatch integration
+- **🆕 Shared Security Groups**: Automated VPC endpoint access without manual configuration
+- **Docker Image Configuration**: Support for custom container images including `hello-world:latest`
 - **Resource Allocation**: Configurable CPU count (2-16 vCPUs) and memory (1-16 GB)
-- **Instance Types**: Multiple EC2 instance type options
+- **Instance Types**: Multiple EC2 instance type options (m5.xlarge, m5.2xlarge, etc.)
 - **Debug Mode**: Optional debug console access
 - **Environment Variables**: JSON-based environment configuration
 - **Regional Support**: 6 AWS regions with proper region naming
+- **🆕 Automated Lifecycle**: Complete deployment and termination automation
 
 ### Adding New Providers
 
@@ -101,9 +135,10 @@ The UI will automatically:
 ## Technology Stack
 
 - **Frontend**: Next.js 15, React 19, TypeScript
-- **Styling**: Tailwind CSS 4.0
+- **Styling**: Tailwind CSS 4.0 with indigo design system
 - **Authentication**: Privy (Email + Wallet)
-- **Database**: AWS DynamoDB with provider support
+- **Database**: AWS DynamoDB with enhanced provider support
+- **🆕 Real-time Logs**: AWS CloudWatch Logs integration
 - **Provider System**: Extensible plugin architecture
 - **Deployment**: Vercel-ready configuration
 - **UI Components**: Headless UI, Lucide React icons
@@ -113,6 +148,7 @@ The UI will automatically:
 ### Prerequisites
 - Node.js 18+ and pnpm
 - AWS account with DynamoDB access
+- **🆕 Treza Terraform Infrastructure** deployed for full functionality
 - Environment variables configured
 
 ### Installation
@@ -149,18 +185,27 @@ The UI will automatically:
 
 ### Getting Started
 1. **Sign In**: Use your email address to authenticate
-2. **Create Enclaves**: Select a provider and configure your isolated execution environment
+2. **🆕 Create Enclaves**: Select a provider and configure with instant application logs
 3. **Deploy Tasks**: Schedule automated tasks to run in your enclaves
-4. **Monitor Execution**: Track task performance and enclave status
+4. **🆕 Monitor in Real-Time**: Track task performance and view application logs immediately
 5. **Generate API Keys**: Create SDK access keys for external integrations
 
-### Creating Enclaves with Providers
+### 🆕 Creating Enclaves with Enhanced Experience
 
-1. **Choose Provider**: Select from available providers (currently AWS Nitro)
+1. **Choose Provider**: Select from available providers (currently AWS Nitro with full automation)
 2. **Configure Resources**: Set CPU count, memory allocation, and instance type
-3. **Specify Container**: Provide Docker image URI for your application
+3. **Specify Container**: Provide Docker image URI (e.g., `hello-world:latest` for testing)
 4. **Select Region**: Choose from provider-supported regions
-5. **Optional GitHub Integration**: Connect repositories for CI/CD workflows
+5. **🆕 Deploy and Monitor**: Watch real-time status and access application logs immediately
+6. **🆕 Manage Lifecycle**: Use professional pause/terminate controls with proper status tracking
+
+### 🆕 Enhanced Monitoring Features
+
+- **Real-Time Status**: Live updates on enclave deployment and operation status
+- **Application Logs**: Instant access to container logs through CloudWatch integration
+- **Professional Interface**: Clean, consistent design with indigo theme
+- **Responsive Layout**: Optimized for all devices with better component spacing
+- **Error Handling**: Clear error messages and recovery guidance
 
 ### API Endpoints
 
@@ -170,10 +215,10 @@ The platform provides RESTful APIs for all core functionality:
 - `GET /api/providers` - List available providers
 - `GET /api/providers?id={providerId}` - Get specific provider details
 
-#### Enclaves
-- `GET /api/enclaves?wallet={address}` - List user's enclaves
+#### 🆕 Enhanced Enclaves
+- `GET /api/enclaves?wallet={address}` - List user's enclaves with real-time status
 - `POST /api/enclaves` - Create new enclave with provider configuration
-- `PUT /api/enclaves` - Update enclave and provider settings
+- `PATCH /api/enclaves/{id}` - **🆕 Update enclave lifecycle** (pause, resume, terminate)
 - `DELETE /api/enclaves` - Delete enclave
 
 #### Tasks
@@ -194,15 +239,21 @@ The platform provides RESTful APIs for all core functionality:
 
 - **[TypeScript Fixes](docs/TYPESCRIPT_FIXES.md)** - Solutions for third-party dependency TypeScript issues
 
-### Project Structure
+### 🆕 Enhanced Project Structure
 ```
 treza-app/
 ├── app/
 │   ├── (auth)/          # Authentication pages
 │   ├── (default)/       # Main application pages
-│   │   └── platform/    # Platform dashboard and components
+│   │   └── platform/    # 🆕 Enhanced platform dashboard and components
+│   │       ├── enclaves/
+│   │       │   └── [id]/page.tsx    # 🆕 Enhanced detail page with real-time logs
+│   │       └── components/
+│   │           ├── enclaves-section.tsx     # 🆕 Streamlined interface
+│   │           └── enhanced-monitoring.tsx  # 🆕 Real-time monitoring
 │   └── api/             # API routes
-│       ├── enclaves/    # Enclave management APIs
+│       ├── enclaves/    # 🆕 Enhanced enclave management APIs
+│       │   └── [id]/route.ts  # 🆕 Lifecycle management (PATCH for terminate/pause)
 │       ├── providers/   # Provider system APIs
 │       ├── tasks/       # Task management APIs
 │       └── api-keys/    # API key management
@@ -214,7 +265,7 @@ treza-app/
 │   ├── providers/       # Provider system implementation
 │   │   ├── types.ts     # Provider interfaces and types
 │   │   ├── registry.ts  # Provider registry
-│   │   ├── aws-nitro.ts # AWS Nitro provider implementation
+│   │   ├── aws-nitro.ts # 🆕 Enhanced AWS Nitro provider implementation
 │   │   └── index.ts     # Provider system exports
 │   ├── dynamodb.ts      # Database utilities
 │   └── privy-config.ts  # Authentication configuration
@@ -223,13 +274,15 @@ treza-app/
         └── providers/   # Provider icons
 ```
 
-### Key Components
-- **PlatformDashboard**: Main dashboard with tabbed interface
-- **EnclavesSection**: Enhanced enclave creation and management with provider support
+### 🆕 Enhanced Key Components
+- **PlatformDashboard**: Main dashboard with enhanced tabbed interface
+- **🆕 EnhancedEnclavesSection**: Real-time enclave management with application logs
+- **🆕 Professional Controls**: Redesigned lifecycle management buttons
 - **ProviderSelector**: Reusable provider selection component
 - **ProviderConfigComponent**: Dynamic configuration forms based on provider schemas
 - **TasksSection**: Task scheduling, deployment, and monitoring
 - **ApiKeysSection**: API key generation and management
+- **🆕 RealTimeLogViewer**: Professional application log display component
 
 ### Available Scripts
 - `pnpm dev` - Start development server
@@ -241,18 +294,18 @@ treza-app/
 
 The platform uses DynamoDB with the following tables:
 
-### Enclaves Table (Enhanced with Provider Support)
+### 🆕 Enhanced Enclaves Table (with Provider Support)
 ```
 {
   id: string (primary key)
   name: string
   description: string
-  status: 'active' | 'inactive' | 'pending'
+  status: 'PENDING_DEPLOY' | 'DEPLOYING' | 'DEPLOYED' | 'PENDING_DESTROY' | 'DESTROYING' | 'DESTROYED' | 'FAILED'  // 🆕 Enhanced status values
   region: string
-  providerId: string              // NEW: Provider identifier
-  providerConfig: object          // NEW: Provider-specific configuration
+  providerId: string              // Provider identifier
+  providerConfig: object          // Provider-specific configuration
   walletAddress: string (GSI)
-  createdAt: string
+  createdAt: string               // 🆕 Used for default sorting
   updatedAt: string
   githubConnection?: object       // Optional GitHub integration
 }
@@ -295,9 +348,10 @@ The platform uses DynamoDB with the following tables:
 - **Provider Validation**: Configuration validation per provider type
 - **Encrypted Storage**: Sensitive data encrypted at rest
 - **API Key Permissions**: Granular access control
-- **Secure Enclaves**: Provider-specific isolation with strict boundaries
+- **🆕 Automated Secure Enclaves**: Provider-specific isolation with shared security groups
 - **Task Isolation**: Each task runs in its designated enclave securely
 - **Audit Logging**: Complete operation and execution history
+- **🆕 Real-time Security Monitoring**: Continuous status tracking and alerting
 
 ## Deployment
 
@@ -306,6 +360,13 @@ The app is optimized for Vercel deployment:
 1. Connect your GitHub repository to Vercel
 2. Configure environment variables in Vercel dashboard
 3. Deploy automatically on push to main branch
+
+### 🆕 Required Infrastructure
+For full functionality, deploy the **treza-terraform** infrastructure first:
+- Provides automated enclave deployment
+- Enables real-time application logs
+- Manages shared security groups
+- Handles lifecycle automation
 
 ## Provider Development
 
@@ -342,12 +403,14 @@ See `lib/providers/azure-enclaves.ts` for a complete example of how to add Azure
 - **Intel SGX**: Under consideration
 - **Custom On-Premise Solutions**: Enterprise feature
 
-### Platform Enhancements
-- Real-time enclave monitoring and metrics
-- Advanced task orchestration and workflows
-- Multi-cloud deployment strategies
-- Enhanced security audit trails
-- Provider-specific cost optimization
+### 🆕 Platform Enhancements (In Progress)
+- ✅ **Real-time enclave monitoring and metrics** - COMPLETED
+- ✅ **Enhanced UI/UX with professional design** - COMPLETED
+- ✅ **Automated lifecycle management** - COMPLETED
+- **Advanced task orchestration and workflows** - PLANNED
+- **Multi-cloud deployment strategies** - PLANNED
+- **Enhanced security audit trails** - PLANNED
+- **Provider-specific cost optimization** - PLANNED
 
 ## Contributing
 
@@ -356,28 +419,59 @@ We welcome contributions to extend the provider system:
 1. **Fork the repository**
 2. **Create a feature branch** for your provider
 3. **Implement the provider** following the existing patterns
-4. **Add comprehensive tests**
-5. **Submit a pull request** with provider documentation
+4. **🆕 Test with real-time features** including application logs and status updates
+5. **Add comprehensive tests**
+6. **Submit a pull request** with provider documentation
 
-## Architecture
+## 🆕 Enhanced Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   API Routes    │    │   DynamoDB      │
 │   (React/Next)  │◄──►│   (Next.js)     │◄──►│   (AWS)         │
+│   + Real-time   │    │   + Lifecycle   │    │   + Enhanced    │
+│   Monitoring    │    │   Management    │    │   Status        │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Provider      │    │   Business      │    │   Task Engine   │
-│   System        │    │   Logic         │    │   (Future)      │
-│   (Extensible)  │    │                 │    │                 │
+│   Provider      │    │   Business      │    │   CloudWatch    │
+│   System        │    │   Logic         │    │   Logs          │
+│   (Extensible)  │    │   + Automation  │    │   (Real-time)   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│   AWS Nitro     │    ┌─────────────────┐    ┌─────────────────┐
-│   Azure CC      │    │   Future        │    │   Custom        │
-│   Google CC     │    │   Providers     │    │   Providers     │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   AWS Nitro     │    │   Terraform     │    │   Step          │
+│   + Automation  │    │   Infrastructure│    │   Functions     │
+│   + Shared SGs  │    │   (Backend)     │    │   (Workflows)   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
+
+## 🚀 Major Achievements
+
+### ✅ **Complete Automation**
+- **Zero Manual Intervention**: Full enclave lifecycle automation
+- **Instant Application Logs**: Real-time visibility into enclave operations
+- **Professional Interface**: Clean, consistent design with indigo theme
+- **Correct Status Progression**: Fixed termination workflows and status display
+
+### ✅ **Enhanced User Experience**
+- **Streamlined Interface**: Removed redundant columns and improved layout
+- **Professional Controls**: Redesigned buttons and status indicators
+- **Real-time Monitoring**: Live updates and application log streaming
+- **Responsive Design**: Optimized for all devices with better spacing
+
+### ✅ **Production Ready Features**
+- **Robust Error Handling**: Clear error messages and recovery options
+- **Comprehensive Monitoring**: Real-time status and log visibility
+- **Automated Security**: Shared security groups and VPC endpoint management
+- **Scalable Architecture**: Extensible provider system for future growth
+
+---
+
+**Created**: December 2024  
+**Status**: Production Ready  
+**Version**: 2.0.0 - **Enhanced Automation & Real-time Monitoring**
+
+*Built for secure, scalable enclave management with complete lifecycle automation and professional user experience.*
