@@ -24,7 +24,7 @@ interface ApiKey {
 }
 
 function generateApiKey(): string {
-  const prefix = 'sk_live_';
+  const prefix = 'treza_live_';
   const randomString = randomBytes(16).toString('hex');
   return prefix + randomString;
 }
