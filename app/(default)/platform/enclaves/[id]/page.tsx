@@ -2,7 +2,8 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ArrowLeftIcon, PlayIcon, PauseIcon, TrashIcon, EyeIcon, DocumentTextIcon, CpuChipIcon, CloudIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PlayIcon, PauseIcon, TrashIcon, EyeIcon, DocumentTextIcon, ShieldCheckIcon, CpuChipIcon, CloudIcon } from '@heroicons/react/24/outline';
+import { getDetailsStatusColors, formatStatusText } from '@/lib/status-colors';
 
 interface Enclave {
   id: string;
@@ -45,6 +46,48 @@ interface EnclaveLogs {
   };
 }
 
+interface AttestationDocument {
+  moduleId: string;
+  digest: string;
+  timestamp: number;
+  pcrs: {
+    0: string; // Enclave image file
+    1: string; // Linux kernel hash
+    2: string; // Application hash
+    8: string; // Signing certificate hash
+  };
+  certificate: string;
+  cabundle: string[];
+  publicKey?: string;
+  userData?: string;
+  nonce?: string;
+}
+
+interface AttestationVerification {
+  isValid: boolean;
+  trustLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+  verificationStatus: 'VERIFIED' | 'PENDING' | 'FAILED';
+  integrityScore: number;
+  lastVerified: string;
+  errors?: string[];
+}
+
+interface AttestationData {
+  enclaveId: string;
+  attestationDocument: AttestationDocument;
+  verification: AttestationVerification;
+  endpoints: {
+    verificationUrl: string;
+    apiEndpoint: string;
+    webhookUrl: string;
+  };
+  useCases: {
+    financial: boolean;
+    healthcare: boolean;
+    enterprise: boolean;
+  };
+}
+
 export default function EnclaveDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -52,11 +95,13 @@ export default function EnclaveDetailPage() {
   
   const [enclave, setEnclave] = useState<Enclave | null>(null);
   const [logs, setLogs] = useState<EnclaveLogs | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'config'>('overview');
+  const [attestation, setAttestation] = useState<AttestationData | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'attestation'>('overview');
   const [logType, setLogType] = useState<'all' | 'ecs' | 'stepfunctions' | 'lambda' | 'application' | 'errors'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [isLoadingAttestation, setIsLoadingAttestation] = useState(false);
 
   useEffect(() => {
     fetchEnclaveDetails();
@@ -74,18 +119,38 @@ export default function EnclaveDetailPage() {
     fetchLogs();
   }, [logType]);
 
+  // Fetch attestation data when switching to attestation tab
+  useEffect(() => {
+    if (activeTab === 'attestation' && enclave && enclave.status === 'DEPLOYED' && !attestation) {
+      fetchAttestation();
+    }
+  }, [activeTab, enclave?.status]);
+
   // Auto-refresh logs every 10 seconds if enclave is in transitional state
   // Also auto-refresh for newly deployed enclaves to catch logs as they come in
   useEffect(() => {
-    if (enclave && (['DEPLOYING', 'DESTROYING', 'PAUSING', 'RESUMING'].includes(enclave.status) ||
+    if (enclave && (['DEPLOYING', 'DESTROYING', 'PENDING_DESTROY', 'PAUSING', 'RESUMING'].includes(enclave.status) ||
         (enclave.status === 'DEPLOYED' && isRecentlyDeployed(enclave.createdAt)))) {
+      // More frequent refresh for real-time experience during deployment
+      const refreshInterval = enclave.status === 'DEPLOYING' ? 5000 : 10000; // 5s during deployment, 10s otherwise
+      
       const interval = setInterval(() => {
         fetchEnclaveDetails();
         fetchLogs();
-      }, 10000);
+      }, refreshInterval);
       return () => clearInterval(interval);
     }
   }, [enclave?.status, enclave?.createdAt]);
+
+  // Additional real-time refresh when on logs tab during deployment
+  useEffect(() => {
+    if (activeTab === 'logs' && enclave && enclave.status === 'DEPLOYING') {
+      const logsInterval = setInterval(() => {
+        fetchLogs();
+      }, 3000); // Very frequent refresh for logs during deployment
+      return () => clearInterval(logsInterval);
+    }
+  }, [activeTab, enclave?.status]);
 
   // Helper function to check if enclave was deployed recently (within 10 minutes)
   const isRecentlyDeployed = (createdAt: string) => {
@@ -136,6 +201,25 @@ export default function EnclaveDetailPage() {
     }
   };
 
+  const fetchAttestation = async () => {
+    try {
+      setIsLoadingAttestation(true);
+      
+      const response = await fetch(`/api/enclaves/${enclaveId}/attestation`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setAttestation(data);
+      } else {
+        console.error('Error fetching attestation:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching attestation:', error);
+    } finally {
+      setIsLoadingAttestation(false);
+    }
+  };
+
   const handleLifecycleAction = async (action: 'pause' | 'resume' | 'terminate') => {
     if (!enclave) return;
     
@@ -176,21 +260,7 @@ export default function EnclaveDetailPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'DEPLOYED': return 'text-green-400 bg-green-500/10 border-green-500/20';
-      case 'DEPLOYING': return 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20';
-      case 'FAILED': return 'text-red-400 bg-red-500/10 border-red-500/20';
-      case 'PENDING_DEPLOY': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
-      case 'PENDING_DESTROY': return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
-      case 'DESTROYING': return 'text-red-400 bg-red-500/10 border-red-500/20';
-      case 'DESTROYED': return 'text-gray-400 bg-gray-500/10 border-gray-500/20';
-      case 'PAUSING': return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
-      case 'PAUSED': return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
-      case 'RESUMING': return 'text-green-400 bg-green-500/10 border-green-500/20';
-      default: return 'text-gray-400 bg-gray-500/10 border-gray-500/20';
-    }
-  };
+
 
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
@@ -203,16 +273,64 @@ export default function EnclaveDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-gray-900 flex items-center justify-center py-20">
-        <div className="text-white">Loading enclave details...</div>
+      <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative mb-8">
+            {/* Animated enclave icon */}
+            <div className="w-16 h-16 mx-auto mb-4 relative">
+              <div className="absolute inset-0 border-4 border-indigo-600 rounded-lg animate-pulse"></div>
+              <div className="absolute inset-2 border-2 border-indigo-400 rounded opacity-60 animate-ping"></div>
+              <ShieldCheckIcon className="w-8 h-8 text-indigo-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+          
+          {/* Loading spinner */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
+          </div>
+          
+          {/* Loading text */}
+          <h2 className="text-xl font-semibold text-gray-100 mb-2">Loading Enclave Details</h2>
+          <p className="text-gray-400 max-w-sm mx-auto">
+            Fetching enclave configuration, status, and logs...
+          </p>
+          
+          {/* Loading steps animation */}
+          <div className="mt-8 space-y-2">
+            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!enclave) {
     return (
-      <div className="bg-gray-900 flex items-center justify-center py-20">
-        <div className="text-white">Enclave not found</div>
+      <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-6 relative">
+            <div className="absolute inset-0 border-4 border-red-600 rounded-lg"></div>
+            <div className="absolute inset-4 bg-red-600/20 rounded"></div>
+            <div className="text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">⚠️</div>
+          </div>
+          
+          <h2 className="text-xl font-semibold text-gray-100 mb-2">Enclave Not Found</h2>
+          <p className="text-gray-400 max-w-sm mx-auto mb-6">
+            The enclave you're looking for doesn't exist or may have been deleted.
+          </p>
+          
+          <button
+            onClick={() => router.push('/platform')}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white transition-colors"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+            Back to Platform
+          </button>
+        </div>
       </div>
     );
   }
@@ -232,8 +350,8 @@ export default function EnclaveDetailPage() {
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-2xl font-bold">{enclave.name}</h1>
-                <span className={`inline-flex items-center px-2 py-1 text-xs font-medium border rounded ${getStatusColor(enclave.status)}`}>
-                  {enclave.status}
+                <span className={`inline-flex items-center px-2 py-1 text-xs font-medium border rounded ${getDetailsStatusColors(enclave.status)}`}>
+                  {formatStatusText(enclave.status)}
                 </span>
               </div>
               <p className="text-gray-400">{enclave.description}</p>
@@ -281,7 +399,7 @@ export default function EnclaveDetailPage() {
             {[
               { id: 'overview', label: 'Overview', icon: EyeIcon },
               { id: 'logs', label: 'Logs', icon: DocumentTextIcon },
-              { id: 'config', label: 'Configuration', icon: CpuChipIcon }
+              { id: 'attestation', label: 'Attestation', icon: ShieldCheckIcon }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -301,7 +419,7 @@ export default function EnclaveDetailPage() {
 
         {/* Tab Content */}
         {activeTab === 'overview' && (
-          <div className="space-y-6 h-auto">
+          <div className="space-y-6">
             {/* Status and Quick Info Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="bg-gradient-to-br from-gray-800 to-gray-800/80 rounded-xl p-6 border border-gray-700/50">
@@ -311,8 +429,8 @@ export default function EnclaveDetailPage() {
                     <CloudIcon className="w-5 h-5 text-indigo-400" />
                   </div>
                 </div>
-                <div className={`inline-flex items-center px-3 py-2 rounded-lg font-medium ${getStatusColor(enclave.status)}`}>
-                  {enclave.status}
+                <div className={`inline-flex items-center px-3 py-2 rounded-lg font-medium ${getDetailsStatusColors(enclave.status)}`}>
+                  {formatStatusText(enclave.status)}
                 </div>
                 <p className="text-sm text-gray-400 mt-3">
                   {enclave.status === 'DEPLOYED' ? 'Enclave is running and accessible' :
@@ -321,6 +439,13 @@ export default function EnclaveDetailPage() {
                    enclave.status === 'PAUSED' ? 'Enclave is temporarily stopped' :
                    'Current enclave state'}
                 </p>
+                <button
+                  onClick={() => setActiveTab('logs')}
+                  className="inline-flex items-center gap-2 mt-4 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  <DocumentTextIcon className="w-4 h-4" />
+                  View Logs
+                </button>
               </div>
 
               <div className="bg-gradient-to-br from-gray-800 to-gray-800/80 rounded-xl p-6 border border-gray-700/50">
@@ -340,7 +465,7 @@ export default function EnclaveDetailPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-400">Provider</p>
-                    <p className="font-semibold text-white capitalize">{enclave.providerId.replace('-', ' ')}</p>
+                    <p className="font-semibold text-white uppercase">{enclave.providerId.replace('-', ' ')}</p>
                   </div>
                 </div>
               </div>
@@ -477,9 +602,12 @@ export default function EnclaveDetailPage() {
                   (enclave.status === 'DEPLOYED' && isRecentlyDeployed(enclave.createdAt))) && (
                   <div className="flex items-center gap-2 text-xs text-indigo-400">
                     <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
-                    Auto-refreshing every 10s
+                    <span className="font-medium">
+                      {enclave.status === 'DEPLOYING' ? 'Real-time logs' : 'Auto-refreshing'}
+                    </span>
                   </div>
                 )}
+
                 <button
                   onClick={fetchLogs}
                   disabled={isLoadingLogs}
@@ -552,8 +680,60 @@ export default function EnclaveDetailPage() {
                             }`}>
                               {log.source}
                             </td>
-                            <td className="px-4 py-3 text-xs text-gray-300 font-mono break-words">
-                              {formatLogMessage(log.message)}
+                            <td className={`px-4 py-3 text-xs font-mono break-words ${
+                              // Enhanced highlighting for different log types
+                              (log as any).isPCR ? 'text-green-300 bg-green-900/20 border-l-2 border-green-500' :
+                              (log as any).isSuccess ? 'text-blue-300 bg-blue-900/20 border-l-2 border-blue-500' :
+                              (log as any).isError ? 'text-red-300 bg-red-900/20 border-l-2 border-red-500' :
+
+                              log.message.includes('Enclave started') ? 'text-emerald-300 bg-emerald-900/20 border-l-2 border-emerald-500' :
+                              'text-gray-300'
+                            }`}>
+                              {/* Enhanced message formatting */}
+                              {(() => {
+                                const message = formatLogMessage(log.message);
+                                
+                                // Highlight PCR values with clean styling
+                                if ((log as any).isPCR) {
+                                  return (
+                                    <div className="font-mono text-xs text-green-200 break-all bg-green-900/20 p-2 rounded">
+                                      {message}
+                                    </div>
+                                  );
+                                }
+                                
+                                // Highlight success messages
+                                if ((log as any).isSuccess) {
+                                  return (
+                                    <div className="flex items-start gap-2">
+                                      <span className="text-blue-400">✅</span>
+                                      <span>{message}</span>
+                                    </div>
+                                  );
+                                }
+                                
+                                // Highlight vsocket proxy start
+                                if (message.includes('vsocket proxy started')) {
+                                  return (
+                                    <div className="flex items-start gap-2">
+                                      <span className="text-purple-400">🔌</span>
+                                      <span><strong>vsocket Communication Started:</strong> {message.replace('vsocket proxy started for ', '')}</span>
+                                    </div>
+                                  );
+                                }
+                                
+                                // Highlight enclave start
+                                if (message.includes('Enclave started')) {
+                                  return (
+                                    <div className="flex items-start gap-2">
+                                      <span className="text-emerald-400">🚀</span>
+                                      <span><strong>Secure Enclave Launched:</strong> {message}</span>
+                                    </div>
+                                  );
+                                }
+                                
+                                return message;
+                              })()}
                             </td>
                           </tr>
                         ))}
@@ -575,13 +755,18 @@ export default function EnclaveDetailPage() {
                   <div className="text-center py-8 space-y-3">
                     <div className="text-gray-400">
                       {logType === 'application' ? (
-                        <div className="space-y-2">
-                          <div className="text-yellow-400 mb-3">⏳ Application logs may take a few minutes to appear</div>
-                          <div className="text-sm text-gray-500 max-w-md mx-auto">
-                            Logs are processed after your container starts running. For newly deployed enclaves, please wait 2-3 minutes and refresh.
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-center gap-3 mb-4">
+                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                            <div className="text-gray-400 font-medium">No application logs found</div>
                           </div>
-                          <div className="text-xs text-gray-600 mt-2">
-                            If your container doesn't produce logs (like hello-world), check stdout/stderr in "All Logs"
+                          <div className="text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
+                            This enclave hasn't produced any application logs yet. This is normal for some containers 
+                            or if the application hasn't started logging.
+                          </div>
+                          <div className="text-xs text-gray-500 mt-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/30 max-w-md mx-auto">
+                            <strong className="text-gray-400">Tip:</strong> Try checking "All Logs" for stdout/stderr output, 
+                            or refresh the page if the enclave was recently deployed.
                           </div>
                         </div>
                       ) : (
@@ -595,14 +780,136 @@ export default function EnclaveDetailPage() {
           </div>
         )}
 
-        {activeTab === 'config' && (
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Raw Configuration</h3>
-            <pre className="bg-gray-900 p-4 rounded text-sm overflow-x-auto">
-              {JSON.stringify(enclave, null, 2)}
-            </pre>
+        {activeTab === 'attestation' && (
+          <div className="space-y-6">
+            {/* PCR Measurements */}
+            <div className="bg-gradient-to-br from-gray-800 to-gray-800/80 rounded-xl p-6 border border-gray-700/50">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-500/10 rounded-lg">
+                    <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-100">Platform Configuration Registers (PCRs)</h3>
+                </div>
+                {enclave?.status === 'DEPLOYED' && (
+                  <button
+                    onClick={fetchAttestation}
+                    disabled={isLoadingAttestation}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 disabled:opacity-50 text-white rounded-md transition-colors"
+                  >
+                    <svg className={`w-4 h-4 mr-2 ${isLoadingAttestation ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {isLoadingAttestation ? 'Refreshing...' : 'Refresh PCRs'}
+                  </button>
+                )}
+              </div>
+              
+              {enclave?.status !== 'DEPLOYED' ? (
+                <div className="text-center py-8 space-y-3">
+                  <div className="w-16 h-16 mx-auto mb-4 p-4 bg-yellow-500/10 rounded-full">
+                    <ShieldCheckIcon className="w-full h-full text-yellow-400" />
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-300">PCRs Not Available</h4>
+                  <p className="text-gray-400 max-w-md mx-auto">
+                    Platform Configuration Registers are only available for deployed enclaves. Current status: <span className="font-semibold">{enclave?.status}</span>
+                  </p>
+                </div>
+              ) : isLoadingAttestation ? (
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center gap-3 text-indigo-400">
+                    <svg className="w-6 h-6 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="text-lg">Loading PCR Values...</span>
+                  </div>
+                  <p className="text-gray-400 mt-2">Fetching platform configuration registers from enclave logs</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-sm text-gray-400 mb-4">
+                    PCRs provide cryptographic proof of enclave integrity. These values are generated by the AWS Nitro Secure Module.
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { id: '0', name: 'Enclave Image', description: 'Hash of the enclave image file (EIF)' },
+                      { id: '1', name: 'Linux Kernel', description: 'Kernel and bootstrap code hash' },
+                      { id: '2', name: 'Application', description: 'Your application code hash' }
+                    ].map(pcr => (
+                      <div key={pcr.id} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-indigo-400 font-mono text-sm">PCR{pcr.id}</span>
+                          <span className="text-gray-100 font-medium">{pcr.name}</span>
+                        </div>
+                        <p className="text-xs text-gray-400 mb-3">{pcr.description}</p>
+                        <div className="text-xs font-mono bg-gray-800 px-2 py-1 rounded break-all">
+                          {attestation?.attestationDocument.pcrs[parseInt(pcr.id) as 0 | 1 | 2] ? (
+                            <span className="text-green-400">
+                              {attestation.attestationDocument.pcrs[parseInt(pcr.id) as 0 | 1 | 2]}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">Available after enclave deployment</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* API Integration Section */}
+            {attestation && (
+              <div className="bg-gradient-to-br from-gray-800 to-gray-800/80 rounded-xl p-6 border border-gray-700/50">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-indigo-500/10 rounded-lg">
+                    <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-100">API Integration</h4>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm text-gray-400 mb-1 block">Verification Endpoint</label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-sm text-green-400 font-mono">
+                        {attestation.endpoints.verificationUrl}
+                      </code>
+                      <button 
+                        onClick={() => navigator.clipboard.writeText(attestation.endpoints.verificationUrl)}
+                        className="p-2 hover:bg-gray-700 rounded transition-colors"
+                        title="Copy to clipboard"
+                      >
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm text-gray-400 mb-1 block">JavaScript Example</label>
+                    <div className="bg-gray-900 p-3 rounded text-sm">
+                      <code className="text-gray-300 font-mono">
+                        <span className="text-blue-400">const</span> <span className="text-white">response</span> = <span className="text-blue-400">await</span> <span className="text-yellow-400">fetch</span>(<br/>
+                        &nbsp;&nbsp;<span className="text-green-400">'{attestation.endpoints.apiEndpoint}'</span><br/>
+                        );<br/>
+                        <span className="text-blue-400">const</span> <span className="text-white">attestation</span> = <span className="text-blue-400">await</span> <span className="text-white">response</span>.<span className="text-yellow-400">json</span>();
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
+
+
       </div>
     </div>
   );

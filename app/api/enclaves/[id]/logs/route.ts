@@ -316,73 +316,144 @@ async function getLambdaLogs(enclaveId: string, limit: number) {
 
 async function getApplicationLogs(enclaveId: string, limit: number) {
   try {
-    const logSources = [
-      `/aws/nitro-enclave/${enclaveId}/application`,
-      `/aws/nitro-enclave/${enclaveId}/stdout`,
-      `/aws/nitro-enclave/${enclaveId}/stderr`
-    ];
-
+    // NEW: vsocket architecture uses this log group format
+    const vsocketLogGroup = `/aws/ec2/enclave/${enclaveId}`;
     const logs = [];
 
-    for (const logGroupName of logSources) {
-      try {
-        // Get recent log streams
-        const describeStreamsCommand = new DescribeLogStreamsCommand({
-          logGroupName,
-          orderBy: 'LastEventTime',
-          descending: true,
-          limit: 3 // Recent streams only
-        });
+    try {
+      // Get log streams for vsocket architecture
+      const describeStreamsCommand = new DescribeLogStreamsCommand({
+        logGroupName: vsocketLogGroup,
+        orderBy: 'LastEventTime',
+        descending: true,
+        limit: 5 // Recent streams
+      });
 
-        const streamsResponse = await cloudWatchLogs.send(describeStreamsCommand);
+      const streamsResponse = await cloudWatchLogs.send(describeStreamsCommand);
 
-        // Get logs from each stream
-        for (const stream of streamsResponse.logStreams || []) {
-          if (stream.logStreamName) {
-            try {
-              // Get logs from the last 2 hours to catch recent activity
-              const endTime = Date.now();
-              const startTime = endTime - (2 * 60 * 60 * 1000); // 2 hours ago
-              
-              const getLogsCommand = new GetLogEventsCommand({
-                logGroupName,
-                logStreamName: stream.logStreamName,
-                startTime,
-                endTime,
-                limit: 50,
-                startFromHead: false
-              });
+      // Get logs from each stream (especially 'application' stream)
+      for (const stream of streamsResponse.logStreams || []) {
+        if (stream.logStreamName) {
+          try {
+            // Get logs from the last 4 hours to catch all activity
+            const endTime = Date.now();
+            const startTime = endTime - (4 * 60 * 60 * 1000); // 4 hours ago
+            
+            const getLogsCommand = new GetLogEventsCommand({
+              logGroupName: vsocketLogGroup,
+              logStreamName: stream.logStreamName,
+              startTime,
+              endTime,
+              limit: Math.min(limit, 100),
+              startFromHead: false
+            });
 
-              const logsResponse = await cloudWatchLogs.send(getLogsCommand);
-              
-              for (const event of logsResponse.events || []) {
-                if (event.message) {
-                  // Determine log type based on log group
-                  let logType = 'application';
-                  if (logGroupName.includes('/stdout')) {
-                    logType = 'stdout';
-                  } else if (logGroupName.includes('/stderr')) {
-                    logType = 'stderr';
+            const logsResponse = await cloudWatchLogs.send(getLogsCommand);
+            
+            for (const event of logsResponse.events || []) {
+              if (event.message) {
+                // Parse vsocket messages for better display
+                let logType = 'application';
+                let parsedMessage = event.message;
+                
+                // Check if it's a JSON message from enclave
+                try {
+                  const jsonMsg = JSON.parse(event.message);
+                  if (jsonMsg.type && jsonMsg.message) {
+                    logType = jsonMsg.type.toLowerCase();
+                    parsedMessage = `[${jsonMsg.type}] ${jsonMsg.message}`;
+                    if (jsonMsg.timestamp) {
+                      parsedMessage = `${jsonMsg.timestamp} - ${parsedMessage}`;
+                    }
                   }
-
-                  logs.push({
-                    timestamp: event.timestamp,
-                    message: event.message,
-                    stream: stream.logStreamName,
-                    source: 'application',
-                    type: logType,
-                    logGroup: logGroupName
-                  });
+                } catch {
+                  // Not JSON, use as-is
                 }
+
+                logs.push({
+                  timestamp: event.timestamp,
+                  message: parsedMessage,
+                  stream: stream.logStreamName,
+                  source: 'application',
+                  type: logType,
+                  logGroup: vsocketLogGroup,
+                  // Add metadata for better filtering
+                  isPCR: parsedMessage.includes('[PCR]'),
+                  isSuccess: parsedMessage.includes('[SUCCESS]'),
+                  isError: parsedMessage.includes('[ERROR]')
+                });
               }
-            } catch (streamError) {
-              console.warn(`Error fetching logs from stream ${stream.logStreamName}:`, streamError);
             }
+          } catch (streamError) {
+            console.warn(`Error fetching logs from stream ${stream.logStreamName}:`, streamError);
           }
         }
-      } catch (groupError) {
-        // Log group might not exist yet if no application logs have been generated
-        console.warn(`Log group ${logGroupName} not found or no access - this is normal for new enclaves`);
+      }
+    } catch (groupError) {
+      console.warn(`vsocket log group ${vsocketLogGroup} not found - checking legacy format`);
+      
+      // FALLBACK: Check legacy log group format for backward compatibility
+      const legacyLogSources = [
+        `/aws/nitro-enclave/${enclaveId}/application`,
+        `/aws/nitro-enclave/${enclaveId}/stdout`,
+        `/aws/nitro-enclave/${enclaveId}/stderr`
+      ];
+
+      for (const logGroupName of legacyLogSources) {
+        try {
+          const describeStreamsCommand = new DescribeLogStreamsCommand({
+            logGroupName,
+            orderBy: 'LastEventTime',
+            descending: true,
+            limit: 3
+          });
+
+          const streamsResponse = await cloudWatchLogs.send(describeStreamsCommand);
+
+          for (const stream of streamsResponse.logStreams || []) {
+            if (stream.logStreamName) {
+              try {
+                const endTime = Date.now();
+                const startTime = endTime - (2 * 60 * 60 * 1000);
+                
+                const getLogsCommand = new GetLogEventsCommand({
+                  logGroupName,
+                  logStreamName: stream.logStreamName,
+                  startTime,
+                  endTime,
+                  limit: 50,
+                  startFromHead: false
+                });
+
+                const logsResponse = await cloudWatchLogs.send(getLogsCommand);
+                
+                for (const event of logsResponse.events || []) {
+                  if (event.message) {
+                    let logType = 'application';
+                    if (logGroupName.includes('/stdout')) {
+                      logType = 'stdout';
+                    } else if (logGroupName.includes('/stderr')) {
+                      logType = 'stderr';
+                    }
+
+                    logs.push({
+                      timestamp: event.timestamp,
+                      message: event.message,
+                      stream: stream.logStreamName,
+                      source: 'application',
+                      type: logType,
+                      logGroup: logGroupName
+                    });
+                  }
+                }
+              } catch (streamError) {
+                console.warn(`Error fetching logs from legacy stream ${stream.logStreamName}:`, streamError);
+              }
+            }
+          }
+        } catch (legacyGroupError) {
+          // Legacy log group doesn't exist either - this is normal for new vsocket enclaves
+        }
       }
     }
 

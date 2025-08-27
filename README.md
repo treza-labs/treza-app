@@ -56,7 +56,7 @@ Treza App is a secure platform for managing enclaves and automated tasks with bl
 - **🆕 Shared Security Groups**: Automated VPC endpoint access without manual configuration
 - **Docker Image Configuration**: Support for custom container images including `hello-world:latest`
 - **Resource Allocation**: Configurable CPU count (2-16 vCPUs) and memory (1-16 GB)
-- **Instance Types**: Multiple EC2 instance type options (m5.xlarge, m5.2xlarge, etc.)
+- **Instance Types**: Multiple EC2 instance type options (m6i.xlarge, m6i.2xlarge, etc.)
 - **Debug Mode**: Optional debug console access
 - **Environment Variables**: JSON-based environment configuration
 - **Regional Support**: 6 AWS regions with proper region naming

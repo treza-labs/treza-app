@@ -5,6 +5,7 @@ import { Disclosure } from '@headlessui/react';
 import { ChevronDown } from 'lucide-react';
 import { Provider, ProviderConfig, ProviderConfigSchema } from '@/lib/providers/types';
 import { getProvider } from '@/lib/providers';
+import DockerImageSelector from './docker-image-selector';
 
 interface ProviderConfigProps {
   providerId: string;
@@ -86,6 +87,18 @@ export default function ProviderConfigComponent({
 
     switch (field.type) {
       case 'string':
+        // Use Docker image selector for Docker image fields
+        if (fieldName === 'dockerImage' || fieldName === 'containerImage') {
+          return (
+            <DockerImageSelector
+              value={value}
+              onChange={(newValue) => handleFieldChange(fieldName, newValue)}
+              disabled={disabled}
+              placeholder={field.description}
+            />
+          );
+        }
+        
         return (
           <input
             type="text"

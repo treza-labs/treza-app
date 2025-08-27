@@ -8,6 +8,7 @@ import ProviderConfigComponent from '@/components/ui/provider-config';
 import ComingSoonModal from '@/components/ui/coming-soon-modal';
 import { EnclaveWithProvider, ProviderConfig } from '@/lib/providers/types';
 import { getProvider } from '@/lib/providers';
+import { getTableStatusColors, formatStatusText } from '@/lib/status-colors';
 import { isProduction } from '@/lib/environment';
 
 export default function EnclavesSection() {
@@ -564,21 +565,8 @@ export default function EnclavesSection() {
                     <div className="text-sm text-gray-300">{getProviderName(enclave.providerId)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      enclave.status === 'ACTIVE' ? 'bg-green-500/10 text-green-400' :
-                      enclave.status === 'DEPLOYED' ? 'bg-green-500/10 text-green-400' :
-                      enclave.status === 'PENDING_DEPLOY' ? 'bg-yellow-500/10 text-yellow-400' :
-                      enclave.status === 'PENDING_DESTROY' ? 'bg-orange-500/10 text-orange-400' :
-                      enclave.status === 'DEPLOYING' ? 'bg-blue-500/10 text-blue-400' :
-                      enclave.status === 'DESTROYING' ? 'bg-orange-500/10 text-orange-400' :
-                      enclave.status === 'PAUSING' ? 'bg-purple-500/10 text-purple-400' :
-                      enclave.status === 'PAUSED' ? 'bg-gray-500/10 text-gray-400' :
-                      enclave.status === 'RESUMING' ? 'bg-blue-500/10 text-blue-400' :
-                      enclave.status === 'DESTROYED' ? 'bg-gray-500/10 text-gray-500' :
-                      enclave.status === 'FAILED' ? 'bg-red-500/10 text-red-400' :
-                      'bg-gray-500/10 text-gray-400'
-                    }`}>
-                      {enclave.status.replace('_', ' ').toLowerCase()}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTableStatusColors(enclave.status)}`}>
+                      {formatStatusText(enclave.status)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-left">
@@ -679,7 +667,7 @@ export default function EnclavesSection() {
             <h3 className="text-lg font-semibold text-white mb-4 text-left">
               {editingEnclave ? 'Edit Enclave' : 'Create New Enclave'}
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-4 pb-20">
               <div>
                 <label className="block text-left text-sm font-medium text-gray-300 mb-1">Name</label>
                 <input
@@ -947,7 +935,7 @@ export default function EnclavesSection() {
                   setEditingEnclave(null);
                   resetForm();
                 }}
-                className="btn cursor-pointer flex-1 bg-linear-to-b from-gray-800 to-gray-800/60 bg-[length:100%_100%] bg-[bottom] text-gray-300 before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:border before:border-transparent before:[background:linear-gradient(to_right,var(--color-gray-800),var(--color-gray-700),var(--color-gray-800))_border-box] before:[mask-composite:exclude_!important] before:[mask:linear-gradient(white_0_0)_padding-box,_linear-gradient(white_0_0)] hover:bg-[length:100%_150%]"
+                className="btn cursor-pointer flex-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white transition-colors rounded-lg px-4 py-2"
               >
                 Cancel
               </button>

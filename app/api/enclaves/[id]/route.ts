@@ -5,6 +5,16 @@ import {
   updateItem,
   deleteItem
 } from '@/lib/dynamodb';
+import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
+
+// Initialize Step Functions client
+const stepFunctions = new SFNClient({
+  region: process.env.AWS_REGION || 'us-west-2',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  }
+});
 
 export async function GET(
   request: NextRequest,
@@ -102,6 +112,33 @@ export async function PATCH(
         '#updated_at': 'updatedAt'
       }
     );
+
+    // If terminating, trigger the cleanup Step Functions workflow
+    if (action === 'terminate') {
+      try {
+        const cleanupStateMachineArn = `arn:aws:states:${process.env.AWS_REGION || 'us-west-2'}:${process.env.AWS_ACCOUNT_ID}:stateMachine:treza-dev-cleanup`;
+        
+        const executionInput = {
+          enclave_id: id,
+          action: 'destroy',
+          configuration: '{}',
+          terraform_config: 'main.tf',
+          wallet_address: enclave.walletAddress || 'unknown'
+        };
+
+        const startExecutionCommand = new StartExecutionCommand({
+          stateMachineArn: cleanupStateMachineArn,
+          name: `cleanup-${id}-${Date.now()}`,
+          input: JSON.stringify(executionInput)
+        });
+
+        await stepFunctions.send(startExecutionCommand);
+        console.log(`Started cleanup workflow for enclave ${id}`);
+      } catch (stepFunctionError) {
+        console.error('Error starting cleanup workflow:', stepFunctionError);
+        // Don't fail the API call if Step Functions fails - the status is already updated
+      }
+    }
 
     return NextResponse.json({ 
       enclave: updateResult.Attributes,

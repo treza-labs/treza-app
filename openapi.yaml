@@ -4,13 +4,20 @@ info:
   description: |
     Comprehensive API for managing secure enclaves, GitHub integrations, and platform resources.
     
-    **New in v2.0.0:**
+    **New in v2.1.0:**
+    - 🛡️ Cryptographic attestation documents and verification
+    - 📋 Developer integration tools and API endpoints
+    - 🏦 Use case templates for Financial, Healthcare, and Enterprise
+    - 🔐 PCR measurements and security validation
+    - 📊 Business impact and compliance tracking
+    
+    **Previous in v2.0.0:**
     - 🔄 Enclave lifecycle management (pause, resume, terminate)
     - 📜 Comprehensive logs access (application, ECS, Step Functions, Lambda, errors)
     - 🐳 Docker Hub integration (search images, get tags)
     - 📊 Enhanced status tracking with real-time updates
     - 🎯 Individual enclave management endpoints
-  version: 2.0.0
+  version: 2.1.0
   contact:
     name: Treza Support
     url: https://trezalabs.com
@@ -451,6 +458,172 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogsResponse'
+        '404':
+          description: Enclave not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/enclaves/{id}/attestation:
+    get:
+      summary: Get enclave attestation
+      description: Retrieve cryptographic attestation document and verification details for a deployed enclave
+      tags:
+        - Enclaves
+        - Attestation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Enclave ID
+          schema:
+            type: string
+            example: "enc_1234567890_abc123"
+      responses:
+        '200':
+          description: Attestation document and verification details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttestationResponse'
+        '400':
+          description: Attestation not available (enclave not deployed)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Attestation only available for deployed enclaves"
+                  status:
+                    type: string
+                    example: "DEPLOYING"
+        '404':
+          description: Enclave not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/enclaves/{id}/attestation/verify:
+    get:
+      summary: Get verification status
+      description: Get quick verification status for an enclave
+      tags:
+        - Enclaves
+        - Attestation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Enclave ID
+          schema:
+            type: string
+            example: "enc_1234567890_abc123"
+      responses:
+        '200':
+          description: Verification status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enclaveId:
+                    type: string
+                    example: "enc_1234567890_abc123"
+                  isVerified:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    example: "DEPLOYED"
+                  lastVerified:
+                    type: string
+                    format: date-time
+                    example: "2024-12-15T10:30:00Z"
+                  trustLevel:
+                    type: string
+                    enum: [HIGH, MEDIUM, LOW, UNKNOWN]
+                    example: "HIGH"
+        '404':
+          description: Enclave not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Verify attestation document
+      description: Perform comprehensive verification of an attestation document
+      tags:
+        - Enclaves
+        - Attestation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Enclave ID
+          schema:
+            type: string
+            example: "enc_1234567890_abc123"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                attestationDocument:
+                  type: string
+                  description: Base64 encoded attestation document (optional)
+                nonce:
+                  type: string
+                  description: Nonce for replay attack protection
+                  example: "a1b2c3d4e5f6"
+                challenge:
+                  type: string
+                  description: Challenge string for additional verification
+                  example: "verify_12345"
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationResult'
+        '400':
+          description: Cannot verify (enclave not deployed)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Can only verify deployed enclaves"
+                  status:
+                    type: string
+                    example: "DEPLOYING"
         '404':
           description: Enclave not found
           content:
@@ -1597,6 +1770,215 @@ components:
           items:
             $ref: '#/components/schemas/DockerTag'
 
+    AttestationDocument:
+      type: object
+      properties:
+        moduleId:
+          type: string
+          example: "nitro-enclave-enc_1234567890_abc123"
+          description: "Unique identifier for the enclave module"
+        digest:
+          type: string
+          example: "sha384:abc123def456..."
+          description: "SHA-384 digest of the enclave image"
+        timestamp:
+          type: integer
+          format: int64
+          example: 1702642200000
+          description: "Unix timestamp when attestation was generated"
+        pcrs:
+          type: object
+          properties:
+            "0":
+              type: string
+              example: "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef"
+              description: "PCR0: Hash of the enclave image file"
+            "1":
+              type: string
+              example: "b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef12"
+              description: "PCR1: Linux kernel and bootstrap hash"
+            "2":
+              type: string
+              example: "c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234"
+              description: "PCR2: Application hash"
+            "8":
+              type: string
+              example: "d4e5f67890abcdef1234567890abcdef1234567890abcdef123456"
+              description: "PCR8: Signing certificate hash"
+          required: ["0", "1", "2", "8"]
+        certificate:
+          type: string
+          example: "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----"
+          description: "X.509 certificate for verification"
+        cabundle:
+          type: array
+          items:
+            type: string
+          example: ["-----BEGIN CERTIFICATE-----\nMIIB...", "-----BEGIN CERTIFICATE-----\nMIIC..."]
+          description: "Certificate authority bundle"
+        publicKey:
+          type: string
+          example: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBg...\n-----END PUBLIC KEY-----"
+          description: "Public key for verification (optional)"
+        userData:
+          type: string
+          nullable: true
+          example: "custom-user-data"
+          description: "User-provided data included in attestation (optional)"
+        nonce:
+          type: string
+          example: "a1b2c3d4e5f6"
+          description: "Nonce for replay attack protection (optional)"
+      required: [moduleId, digest, timestamp, pcrs, certificate, cabundle]
+
+    AttestationVerification:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+          example: true
+          description: "Whether the attestation is valid"
+        trustLevel:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+          example: "HIGH"
+          description: "Trust level based on verification results"
+        verificationStatus:
+          type: string
+          enum: [VERIFIED, PENDING, FAILED]
+          example: "VERIFIED"
+          description: "Current verification status"
+        integrityScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 98.5
+          description: "Integrity score as a percentage"
+        lastVerified:
+          type: string
+          format: date-time
+          example: "2024-12-15T10:30:00Z"
+          description: "Timestamp of last verification"
+        errors:
+          type: array
+          items:
+            type: string
+          example: []
+          description: "List of verification errors (if any)"
+      required: [isValid, trustLevel, verificationStatus, integrityScore, lastVerified]
+
+    AttestationResponse:
+      type: object
+      properties:
+        enclaveId:
+          type: string
+          example: "enc_1234567890_abc123"
+          description: "Enclave identifier"
+        attestationDocument:
+          $ref: '#/components/schemas/AttestationDocument'
+        verification:
+          $ref: '#/components/schemas/AttestationVerification'
+        endpoints:
+          type: object
+          properties:
+            verificationUrl:
+              type: string
+              format: uri
+              example: "https://app.trezalabs.com/api/enclaves/enc_123456/attestation/verify"
+              description: "URL for third-party verification"
+            apiEndpoint:
+              type: string
+              format: uri
+              example: "https://app.trezalabs.com/api/enclaves/enc_123456/attestation"
+              description: "API endpoint for attestation data"
+            webhookUrl:
+              type: string
+              format: uri
+              example: "https://app.trezalabs.com/api/enclaves/enc_123456/attestation/webhook"
+              description: "Webhook URL for real-time verification updates"
+          required: [verificationUrl, apiEndpoint, webhookUrl]
+      required: [enclaveId, attestationDocument, verification, endpoints]
+
+    VerificationResult:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+          example: true
+          description: "Whether the attestation verification passed"
+        trustLevel:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+          example: "HIGH"
+          description: "Overall trust level"
+        verificationDetails:
+          type: object
+          properties:
+            pcrVerification:
+              type: boolean
+              example: true
+              description: "Whether PCR measurements are valid"
+            certificateChain:
+              type: boolean
+              example: true
+              description: "Whether certificate chain verification passed"
+            timestampValid:
+              type: boolean
+              example: true
+              description: "Whether timestamp is within acceptable range"
+            nonceMatches:
+              type: boolean
+              example: false
+              description: "Whether provided nonce matches (if nonce was provided)"
+            signatureValid:
+              type: boolean
+              example: true
+              description: "Whether cryptographic signature is valid"
+          required: [pcrVerification, certificateChain, timestampValid, nonceMatches, signatureValid]
+        complianceChecks:
+          type: object
+          properties:
+            soc2:
+              type: boolean
+              example: false
+              description: "SOC 2 compliance status"
+            hipaa:
+              type: boolean
+              example: false
+              description: "HIPAA compliance status"
+            fips:
+              type: boolean
+              example: true
+              description: "FIPS 140-2 compliance status"
+            commonCriteria:
+              type: boolean
+              example: true
+              description: "Common Criteria compliance status"
+          required: [soc2, hipaa, fips, commonCriteria]
+        riskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 5
+          description: "Risk score (lower is better)"
+        recommendations:
+          type: array
+          items:
+            type: string
+          example: [
+            "Enclave attestation is valid and secure",
+            "All PCR measurements match expected values",
+            "Certificate chain verification successful"
+          ]
+          description: "Security recommendations and observations"
+        verifiedAt:
+          type: string
+          format: date-time
+          example: "2024-12-15T10:30:00Z"
+          description: "Timestamp when verification was performed"
+      required: [isValid, trustLevel, verificationDetails, complianceChecks, riskScore, recommendations, verifiedAt]
+
   securitySchemes:
     BearerAuth:
       type: http
@@ -1616,6 +1998,8 @@ security:
 tags:
   - name: Enclaves
     description: Secure enclave management and lifecycle control
+  - name: Attestation
+    description: Cryptographic attestation and verification services
   - name: Logs
     description: Enclave logs and monitoring
   - name: Docker

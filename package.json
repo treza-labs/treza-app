@@ -9,9 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.830.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.873.0",
     "@aws-sdk/client-dynamodb": "^3.830.0",
+    "@aws-sdk/client-ec2": "^3.873.0",
     "@aws-sdk/client-sfn": "^3.830.0",
+    "@aws-sdk/client-ssm": "^3.873.0",
     "@aws-sdk/lib-dynamodb": "^3.830.0",
     "@headlessui/react": "^2.2.0",
     "@headlessui/tailwindcss": "^0.2.1",

@@ -58,15 +58,15 @@ export const awsNitroProvider: Provider = {
       description: 'EC2 instance type for the parent instance (Nitro Enclave compatible)',
       required: true,
       options: [
-        { value: 'm5.xlarge', label: 'm5.xlarge (4 vCPU, 16 GiB RAM)' },
-        { value: 'm5.2xlarge', label: 'm5.2xlarge (8 vCPU, 32 GiB RAM)' },
-        { value: 'm5.4xlarge', label: 'm5.4xlarge (16 vCPU, 64 GiB RAM)' },
-        { value: 'm5.8xlarge', label: 'm5.8xlarge (32 vCPU, 128 GiB RAM)' },
-        { value: 'c5.xlarge', label: 'c5.xlarge (4 vCPU, 8 GiB RAM)' },
-        { value: 'c5.2xlarge', label: 'c5.2xlarge (8 vCPU, 16 GiB RAM)' },
-        { value: 'c5.4xlarge', label: 'c5.4xlarge (16 vCPU, 32 GiB RAM)' }
+        { value: 'm6i.xlarge', label: 'm6i.xlarge (4 vCPU, 16 GiB RAM)' },
+        { value: 'm6i.2xlarge', label: 'm6i.2xlarge (8 vCPU, 32 GiB RAM)' },
+        { value: 'm6i.4xlarge', label: 'm6i.4xlarge (16 vCPU, 64 GiB RAM)' },
+        { value: 'm6i.8xlarge', label: 'm6i.8xlarge (32 vCPU, 128 GiB RAM)' },
+        { value: 'c6i.xlarge', label: 'c6i.xlarge (4 vCPU, 8 GiB RAM)' },
+        { value: 'c6i.2xlarge', label: 'c6i.2xlarge (8 vCPU, 16 GiB RAM)' },
+        { value: 'c6i.4xlarge', label: 'c6i.4xlarge (16 vCPU, 32 GiB RAM)' }
       ],
-      defaultValue: 'm5.xlarge'
+      defaultValue: 'm6i.xlarge'
     },
     enableDebug: {
       type: 'boolean',
@@ -113,9 +113,9 @@ export const awsNitroProvider: Provider = {
     if (!config.instanceType) {
       errors.push('Instance type is required');
     } else {
-      const validInstanceTypes = ['m5.xlarge', 'm5.2xlarge', 'm5.4xlarge', 'm5.8xlarge', 'c5.xlarge', 'c5.2xlarge', 'c5.4xlarge'];
+      const validInstanceTypes = ['m6i.xlarge', 'm6i.2xlarge', 'm6i.4xlarge', 'm6i.8xlarge', 'c6i.xlarge', 'c6i.2xlarge', 'c6i.4xlarge'];
       if (!validInstanceTypes.includes(config.instanceType)) {
-        errors.push('Instance type must support Nitro Enclaves (minimum m5.xlarge or c5.xlarge)');
+        errors.push('Instance type must support Nitro Enclaves (minimum m6i.xlarge or c6i.xlarge)');
       }
     }
     
