@@ -87,14 +87,14 @@ export default function EmailConnection({ connectedUser, setConnectedUser }: Ema
       <div className="max-w-md mx-auto">
         <button
           onClick={login}
-          className="btn cursor-pointer w-full bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]"
+          className="btn cursor-pointer w-full bg-gradient-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]"
         >
           Sign In with Email
         </button>
       </div>
 
       <div className="text-xs text-gray-500 max-w-md mx-auto">
-        <p>We'll send you a secure link to authenticate your account</p>
+        <p>We'll send you a one-time login code</p>
       </div>
     </div>
   );
