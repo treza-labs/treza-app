@@ -8,7 +8,7 @@ import EnclavesSection from "./components/enclaves-section";
 import TasksSection from "./components/tasks-section";
 import ApiKeysSection from "./components/api-keys-section";
 
-export default function PlatformDashboard() {
+function PlatformDashboardContent() {
   const { authenticated, user } = usePrivy();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -98,5 +98,13 @@ export default function PlatformDashboard() {
           </div>
         )}
     </div>
+  );
+}
+
+export default function PlatformDashboard() {
+  return (
+    <React.Suspense fallback={<div>Loading...</div>}>
+      <PlatformDashboardContent />
+    </React.Suspense>
   );
 } 

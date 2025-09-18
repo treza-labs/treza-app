@@ -3,6 +3,7 @@ export const metadata = {
   description: "Deploy AI-powered agents that monitor markets, analyze data, and execute strategies on-chain. Built for crypto-native teams and automated trading flows.",
 };
 
+import { Suspense } from "react";
 import PlatformDashboard from "./platform/platform-dashboard";
 
 export default function Home() {
@@ -12,9 +13,11 @@ export default function Home() {
         <div className="py-12 md:py-20">
           {/* Page header */}
           <div className="pb-12 text-center">
-          <PlatformDashboard />
+            <Suspense fallback={<div>Loading...</div>}>
+              <PlatformDashboard />
+            </Suspense>
+          </div>
         </div>
-      </div>
       </div>
     </section>
   );

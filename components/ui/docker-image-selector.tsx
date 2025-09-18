@@ -51,7 +51,7 @@ export default function DockerImageSelector({
   const [tags, setTags] = useState<DockerTag[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Popular/common Docker images as fallback
   const popularImages: DockerImage[] = [
@@ -93,7 +93,7 @@ export default function DockerImageSelector({
       // If we got results from the API, use them
       if (data.results && data.results.length > 0) {
         // Filter out results with missing names
-        const validResults = data.results.filter(result => result.name && result.name !== 'unknown');
+        const validResults = data.results.filter((result: DockerImage) => result.name && result.name !== 'unknown');
         
         if (validResults.length > 0) {
           return validResults;

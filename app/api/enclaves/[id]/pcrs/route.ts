@@ -14,6 +14,7 @@ interface PCRValues {
   pcr0?: string;  // Enclave Image
   pcr1?: string;  // Linux Kernel  
   pcr2?: string;  // Application
+  pcr8?: string;  // Signing certificate hash
 }
 
 export async function GET(
@@ -82,6 +83,9 @@ export async function GET(
                   break;
                 case '2':
                   pcrs.pcr2 = pcrValue;
+                  break;
+                case '8':
+                  pcrs.pcr8 = pcrValue;
                   break;
               }
             }
