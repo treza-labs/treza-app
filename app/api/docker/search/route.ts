@@ -69,6 +69,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Search for repositories
+    if (!query) {
+      return NextResponse.json({ error: 'Query parameter required for search' }, { status: 400 });
+    }
+
     try {
       // Try the Docker Hub search API
       const searchUrl = `https://hub.docker.com/v2/search/repositories/?query=${encodeURIComponent(query)}&page_size=15`;
