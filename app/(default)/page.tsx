@@ -1,9 +1,8 @@
 export const metadata = {
-  title: "Treza - AI Agents for Crypto Execution",
-  description: "Deploy AI-powered agents that monitor markets, analyze data, and execute strategies on-chain. Built for crypto-native teams and automated trading flows.",
+  title: "Treza Network - Privacy infrastructure for crypto and finance",
+  description: "Deploy your applications in hardware-protected enclaves with cryptographic privacy guarantees. Run containers, APIs and AI workloads with simple, privacy-focused developer tools.",
 };
 
-import { Suspense } from "react";
 import PlatformDashboard from "./platform/platform-dashboard";
 
 export default function Home() {
@@ -13,11 +12,9 @@ export default function Home() {
         <div className="py-12 md:py-20">
           {/* Page header */}
           <div className="pb-12 text-center">
-            <Suspense fallback={<div>Loading...</div>}>
-              <PlatformDashboard />
-            </Suspense>
-          </div>
+          <PlatformDashboard />
         </div>
+      </div>
       </div>
     </section>
   );
