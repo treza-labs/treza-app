@@ -8,7 +8,8 @@ import {
   CheckCircleIcon,
   StarIcon,
   ClockIcon,
-  CpuChipIcon
+  CpuChipIcon,
+  ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
 
 interface DockerImage {
@@ -222,6 +223,23 @@ export default function DockerImageSelector({
     return date.toLocaleDateString();
   };
 
+  const getDockerHubUrl = (image: DockerImage): string => {
+    // Official images use /_/imageName
+    if (image.official) {
+      return `https://hub.docker.com/_/${image.name}`;
+    }
+    // User/organization images use /r/owner/imageName
+    if (image.owner) {
+      return `https://hub.docker.com/r/${image.owner}/${image.name.split('/').pop()}`;
+    }
+    // Fallback for images with slash in name (owner/repo format)
+    if (image.name.includes('/')) {
+      return `https://hub.docker.com/r/${image.name}`;
+    }
+    // Default fallback
+    return `https://hub.docker.com/_/${image.name}`;
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <div className="relative">
@@ -277,13 +295,15 @@ export default function DockerImageSelector({
                 </div>
               ) : (
                 suggestions.map((image) => (
-                  <button
+                  <div
                     key={image.name}
-                    onClick={() => handleImageSelect(image)}
-                    className="w-full text-left p-4 hover:bg-gray-700 transition-colors border-b border-gray-700/50 last:border-b-0"
+                    className="w-full text-left hover:bg-gray-700 transition-colors border-b border-gray-700/50 last:border-b-0 group"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between p-4">
+                      <button
+                        onClick={() => handleImageSelect(image)}
+                        className="flex-1 min-w-0 text-left"
+                      >
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-white">{image.name}</span>
                           {image.official && (
@@ -297,13 +317,25 @@ export default function DockerImageSelector({
                         {image.owner && (
                           <p className="text-xs text-gray-500">by {image.owner}</p>
                         )}
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-gray-500 ml-3">
-                        <StarIcon className="w-3 h-3" />
-                        <span>{image.stars.toLocaleString()}</span>
+                      </button>
+                      <div className="flex items-center gap-2 ml-3">
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <StarIcon className="w-3 h-3" />
+                          <span>{image.stars.toLocaleString()}</span>
+                        </div>
+                        <a
+                          href={getDockerHubUrl(image)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-1 text-gray-500 hover:text-indigo-400 transition-colors rounded hover:bg-gray-600/50"
+                          title="View on Docker Hub"
+                        >
+                          <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                        </a>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))
               )}
             </>
@@ -315,9 +347,21 @@ export default function DockerImageSelector({
       {showTags && selectedImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 w-full max-w-2xl mx-4 max-h-96 overflow-hidden">
-            <div className="flex items-center gap-2 mb-4">
-              <TagIcon className="w-5 h-5 text-indigo-400" />
-              <h3 className="text-lg font-semibold text-white">Select Tag for {selectedImage.name}</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TagIcon className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-lg font-semibold text-white">Select Tag for {selectedImage.name}</h3>
+              </div>
+              <a
+                href={getDockerHubUrl(selectedImage)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-400 hover:text-indigo-400 border border-gray-600 hover:border-indigo-500 rounded transition-colors"
+                title="View on Docker Hub"
+              >
+                <span>View on Docker Hub</span>
+                <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+              </a>
             </div>
             
             {isLoadingTags ? (

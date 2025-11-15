@@ -17,6 +17,8 @@ export default function EnclavesSection() {
   const [enclaves, setEnclaves] = useState<EnclaveWithProvider[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
+  const [showComingSoonPopover, setShowComingSoonPopover] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   const [editingEnclave, setEditingEnclave] = useState<EnclaveWithProvider | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isConnectingGitHub, setIsConnectingGitHub] = useState(false);
@@ -447,6 +449,7 @@ export default function EnclavesSection() {
         accessToken: ''
       }
     });
+    setCurrentStep(1);
   };
 
   const getStatusColor = (status: string) => {
@@ -526,7 +529,7 @@ export default function EnclavesSection() {
             {isLoading ? 'Refreshing...' : 'Refresh'}
           </button>
           <button
-            onClick={() => isProduction() ? setIsComingSoonModalOpen(true) : setIsModalOpen(true)}
+            onClick={() => setIsModalOpen(true)}
             className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
           >
             Create Enclave
@@ -652,7 +655,7 @@ export default function EnclavesSection() {
             Create your first secure enclave to start running AI agents in isolated environments.
           </p>
           <button
-            onClick={() => isProduction() ? setIsComingSoonModalOpen(true) : setIsModalOpen(true)}
+            onClick={() => setIsModalOpen(true)}
             className="btn cursor-pointer bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
           >
             Create Your First Enclave
@@ -664,68 +667,129 @@ export default function EnclavesSection() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-white mb-4 text-left">
+            <h3 className="text-lg font-semibold text-white mb-6 text-left">
               {editingEnclave ? 'Edit Enclave' : 'Create New Enclave'}
             </h3>
-            <div className="space-y-4 pb-20">
-              <div>
-                <label className="block text-left text-sm font-medium text-gray-300 mb-1">Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="form-input w-full"
-                  placeholder="Enter enclave name"
-                />
-              </div>
-              <div>
-                <label className="block text-left text-sm font-medium text-gray-300 mb-1">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  className="form-input w-full"
-                  rows={3}
-                  placeholder="Enter enclave description"
-                />
-              </div>
 
-              {/* Provider Selection */}
-              <ProviderSelector
-                selectedProviderId={formData.providerId}
-                onProviderChange={handleProviderChange}
-                disabled={!!editingEnclave} // Don't allow provider changes when editing
-              />
+            {/* Stepper - Only show for new enclaves */}
+            {!editingEnclave && (
+              <div className="mb-8">
+                <div className="flex items-center justify-center gap-3">
+                  {/* Step 1 */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                      currentStep === 1 
+                        ? 'bg-indigo-600 border-indigo-600 text-white' 
+                        : currentStep > 1 
+                        ? 'bg-green-600 border-green-600 text-white'
+                        : 'bg-gray-800 border-gray-600 text-gray-400'
+                    }`}>
+                      {currentStep > 1 ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <span className="text-sm font-semibold">1</span>
+                      )}
+                    </div>
+                    <span className={`text-xs font-medium ${currentStep === 1 ? 'text-white' : 'text-gray-500'}`}>
+                      Basic Info
+                    </span>
+                  </div>
 
-              {/* Region Selection */}
-              {formData.providerId && (
-                <div>
-                  <label className="block text-left text-sm font-medium text-gray-300 mb-1">Region</label>
-                  <select
-                    value={formData.region}
-                    onChange={(e) => setFormData({...formData, region: e.target.value})}
-                    className="form-input w-full"
-                  >
-                    <option value="">Select a region...</option>
-                    {(() => {
-                      const provider = getProvider(formData.providerId);
-                      return provider?.regions.map((region) => (
-                        <option key={region} value={region}>
-                          {provider.getDisplayName(region)}
-                        </option>
-                      )) || [];
-                    })()}
-                  </select>
+                  {/* Connector Line */}
+                  <div className={`w-24 h-0.5 ${currentStep > 1 ? 'bg-green-600' : 'bg-gray-700'}`}></div>
+
+                  {/* Step 2 */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                      currentStep === 2 
+                        ? 'bg-indigo-600 border-indigo-600 text-white' 
+                        : 'bg-gray-800 border-gray-600 text-gray-400'
+                    }`}>
+                      <span className="text-sm font-semibold">2</span>
+                    </div>
+                    <span className={`text-xs font-medium ${currentStep === 2 ? 'text-white' : 'text-gray-500'}`}>
+                      Configuration
+                    </span>
+                  </div>
                 </div>
+              </div>
+            )}
+
+            {/* Form Content */}
+            <div className="space-y-4 pb-6 min-h-[300px]">
+              {/* Step 1: Basic Info - Show for new enclaves on step 1, or always for editing */}
+              {(editingEnclave || currentStep === 1) && (
+                <>
+                  <div>
+                    <label className="block text-left text-sm font-medium text-gray-300 mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      className="form-input w-full"
+                      placeholder="Enter enclave name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-left text-sm font-medium text-gray-300 mb-1">Description</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      className="form-input w-full"
+                      rows={3}
+                      placeholder="Enter enclave description"
+                    />
+                  </div>
+
+                  {/* Provider Selection */}
+                  <ProviderSelector
+                    selectedProviderId={formData.providerId}
+                    onProviderChange={handleProviderChange}
+                    disabled={!!editingEnclave} // Don't allow provider changes when editing
+                  />
+
+                  {/* Region Selection */}
+                  {formData.providerId && (
+                    <div>
+                      <label className="block text-left text-sm font-medium text-gray-300 mb-1">Region</label>
+                      <select
+                        value={formData.region}
+                        onChange={(e) => setFormData({...formData, region: e.target.value})}
+                        className="form-input w-full"
+                      >
+                        <option value="">Select a region...</option>
+                        {(() => {
+                          const provider = getProvider(formData.providerId);
+                          return provider?.regions.map((region) => (
+                            <option key={region} value={region}>
+                              {provider.getDisplayName(region)}
+                            </option>
+                          )) || [];
+                        })()}
+                      </select>
+                    </div>
+                  )}
+                </>
               )}
 
-              {/* Provider Configuration */}
-              {formData.providerId && (
-                <ProviderConfigComponent
-                  providerId={formData.providerId}
-                  config={formData.providerConfig}
-                  onConfigChange={handleProviderConfigChange}
-                  disabled={isLoading}
-                />
+              {/* Step 2: Configuration - Show for new enclaves on step 2, or always for editing */}
+              {(editingEnclave || currentStep === 2) && formData.providerId && (
+                <div>
+                  {!editingEnclave && (
+                    <div className="mb-4 pb-4 border-b border-gray-700">
+                      <h4 className="text-sm font-semibold text-white mb-1">Provider Configuration</h4>
+                      <p className="text-xs text-gray-400">Configure your AWS Nitro Enclave settings</p>
+                    </div>
+                  )}
+                  <ProviderConfigComponent
+                    providerId={formData.providerId}
+                    config={formData.providerConfig}
+                    onConfigChange={handleProviderConfigChange}
+                    disabled={isLoading}
+                  />
+                </div>
               )}
 
               {/* GitHub Connection Section - Hidden for now */}
@@ -928,24 +992,100 @@ export default function EnclavesSection() {
                 </>
               )}
             </div>
+
+            {/* Navigation Buttons */}
             <div className="flex space-x-3 mt-6">
-              <button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setEditingEnclave(null);
-                  resetForm();
-                }}
-                className="btn cursor-pointer flex-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white transition-colors rounded-lg px-4 py-2"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={editingEnclave ? handleUpdate : handleCreate}
-                className="btn cursor-pointer flex-1 bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
-                disabled={isLoading || !formData.name || !formData.description || !formData.providerId || !formData.region}
-              >
-                {isLoading ? 'Processing...' : (editingEnclave ? 'Update' : 'Create')}
-              </button>
+              {/* Cancel / Back Button */}
+              {editingEnclave || currentStep === 1 ? (
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setEditingEnclave(null);
+                    resetForm();
+                  }}
+                  className="btn cursor-pointer flex-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white transition-colors rounded-lg px-4 py-2"
+                >
+                  Cancel
+                </button>
+              ) : (
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="btn cursor-pointer flex-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white transition-colors rounded-lg px-4 py-2 flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+              )}
+
+              {/* Next / Create Button */}
+              {editingEnclave ? (
+                <button
+                  onClick={handleUpdate}
+                  className="btn cursor-pointer flex-1 bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
+                  disabled={isLoading || !formData.name || !formData.description || !formData.providerId || !formData.region}
+                >
+                  {isLoading ? 'Processing...' : 'Update'}
+                </button>
+              ) : currentStep === 1 ? (
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="btn cursor-pointer flex-1 bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors flex items-center justify-center gap-2"
+                  disabled={!formData.name || !formData.description || !formData.providerId || !formData.region}
+                >
+                  Next
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="relative flex-1">
+                  <button
+                    onClick={() => {
+                      // Show Coming Soon modal for new enclave creation
+                      setIsModalOpen(false);
+                      setIsComingSoonModalOpen(true);
+                    }}
+                    onMouseEnter={() => setShowComingSoonPopover(true)}
+                    onMouseLeave={() => setShowComingSoonPopover(false)}
+                    className="btn cursor-pointer w-full bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Processing...' : 'Create Enclave'}
+                  </button>
+                  
+                  {/* Coming Soon Popover */}
+                  {showComingSoonPopover && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                      <div className="bg-gray-900 border border-indigo-500/30 rounded-lg shadow-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-0.5">
+                            <div className="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                              <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-sm font-semibold text-white mb-1">Coming Soon</h4>
+                            <p className="text-xs text-gray-400 leading-relaxed">
+                              We're currently preparing our infrastructure for public launch. Enclave creation will be available soon with enhanced security and monitoring capabilities.
+                            </p>
+                          </div>
+                        </div>
+                        {/* Arrow */}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-px">
+                          <div className="border-8 border-transparent border-t-indigo-500/30"></div>
+                          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full">
+                            <div className="border-[7px] border-transparent border-t-gray-900"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
