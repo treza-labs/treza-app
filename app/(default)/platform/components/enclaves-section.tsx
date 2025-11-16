@@ -1032,7 +1032,6 @@ export default function EnclavesSection() {
                 <button
                   onClick={() => setCurrentStep(2)}
                   className="btn cursor-pointer flex-1 bg-gradient-to-t from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-colors flex items-center justify-center gap-2"
-                  disabled={!formData.name || !formData.description || !formData.providerId || !formData.region}
                 >
                   Next
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
