@@ -2,7 +2,7 @@
 
 This document explains the TypeScript configuration and fixes applied to resolve third-party dependency issues while maintaining type safety for our own code.
 
-## 🎯 Surgical Fix for `ox` Package
+##  Surgical Fix for `ox` Package
 
 ### Problem
 The `ox` package (used internally by `viem` for Ethereum operations) has TypeScript errors in its own source code, specifically in the `Authorization.ts` module. This causes build failures even though the errors are not in our code.
@@ -54,22 +54,22 @@ declare module 'ox' {
 - `skipDefaultLibCheck: true` - Skip type checking of default library declaration files
 - `moduleResolution: "bundler"` - Use modern bundler-style module resolution
 
-## ✅ Benefits of This Approach
+##  Benefits of This Approach
 
-1. **🎯 Surgical**: Only fixes the specific problematic module
-2. **🛡️ Type Safety**: Preserves TypeScript checking for our own code
-3. **🔍 Error Detection**: Still catches real TypeScript errors in our codebase
-4. **🚀 Build Speed**: Faster builds compared to ignoring all errors
-5. **📦 Future-Proof**: When `ox` fixes their issues, we can remove this override
+1. ** Surgical**: Only fixes the specific problematic module
+2. ** Type Safety**: Preserves TypeScript checking for our own code
+3. ** Error Detection**: Still catches real TypeScript errors in our codebase
+4. ** Build Speed**: Faster builds compared to ignoring all errors
+5. ** Future-Proof**: When `ox` fixes their issues, we can remove this override
 
-## 🚫 Avoided Anti-Patterns
+## � Avoided Anti-Patterns
 
 We specifically avoided these sledgehammer approaches:
-- ❌ `typescript.ignoreBuildErrors: true` in `next.config.js`
-- ❌ `// @ts-ignore` comments throughout the codebase
-- ❌ Disabling strict mode or other TypeScript safety features
+-  `typescript.ignoreBuildErrors: true` in `next.config.js`
+-  `// @ts-ignore` comments throughout the codebase
+-  Disabling strict mode or other TypeScript safety features
 
-## 🔧 Maintenance
+##  Maintenance
 
 ### When to Remove This Fix
 Remove `types/ox-fix.d.ts` when:
@@ -86,20 +86,20 @@ pnpm run build
 # (Try adding a TypeScript error to one of our files)
 ```
 
-## 📚 Related Dependencies
+##  Related Dependencies
 
 This fix addresses issues in the following dependency chain:
 ```
 treza-app
-├── @privy-io/react-auth
-├── viem (Ethereum client)
-└── wagmi (React hooks for Ethereum)
-    └── viem
-        └── ox (Low-level Ethereum primitives)
-            └── ❌ TypeScript errors in Authorization.ts
+ @privy-io/react-auth
+ viem (Ethereum client)
+ wagmi (React hooks for Ethereum)
+     viem
+         ox (Low-level Ethereum primitives)
+              TypeScript errors in Authorization.ts
 ```
 
-## 🎯 Alternative Solutions Considered
+##  Alternative Solutions Considered
 
 1. **Version Pinning**: Tried pinning specific `ox` versions - didn't resolve the core issue
 2. **Dependency Updates**: Updated to latest versions - issue persists in `ox` source
