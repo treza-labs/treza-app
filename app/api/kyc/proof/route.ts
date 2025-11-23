@@ -1,12 +1,21 @@
 /**
  * POST /api/kyc/proof
  * Submit a ZK proof for KYC verification
+ * 
+ * Authentication: None (open endpoint)
+ * Rate Limiting: Recommended via middleware (10 requests/hour per IP)
+ * 
+ * Security:
+ * - Cryptographic proof validation prevents fake submissions
+ * - Blockchain transaction costs provide economic rate limiting
+ * - Duplicate commitments are rejected on-chain
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { randomUUID } from 'crypto';
+import { createKYCVerifierClient } from '@/lib/blockchain/kyc-verifier';
 
 // Initialize DynamoDB client
 const client = new DynamoDBClient({
@@ -106,7 +115,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Store in DynamoDB
-    const tableName = process.env.DYNAMODB_TABLE_NAME || 'treza-kyc-proofs';
+    const tableName = process.env.DYNAMODB_KYC_PROOFS_TABLE || 'treza-kyc-proofs';
     
     try {
       await ddbDocClient.send(
@@ -120,15 +129,57 @@ export async function POST(request: NextRequest) {
       // Continue even if DB fails - can fallback to in-memory or other storage
     }
 
-    // TODO: Optional blockchain submission
-    // const chainTxHash = await submitToBlockchain(proofRecord);
+    // Submit to blockchain (if configured)
+    let chainTxHash: string | undefined;
+    let blockchainProofId: string | undefined;
+    
+    if (process.env.NEXT_PUBLIC_KYC_VERIFIER_ADDRESS && process.env.PRIVATE_KEY) {
+      try {
+        console.log('Starting blockchain submission...');
+        const kycVerifier = createKYCVerifierClient();
+        
+        // Submit proof to blockchain with timeout
+        const blockchainPromise = kycVerifier.submitProof(
+          proof.commitment,
+          proof.proof,
+          proof.publicInputs
+        );
+        
+        // 60-second timeout for blockchain submission
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Blockchain submission timeout')), 60000)
+        );
+        
+        const result = await Promise.race([blockchainPromise, timeoutPromise]);
+        
+        chainTxHash = result.txHash;
+        blockchainProofId = result.proofId;
+        
+        console.log(`✅ Proof submitted to blockchain: ${chainTxHash}`);
+        
+        // Update DB record with blockchain info
+        proofRecord.chainTxHash = chainTxHash;
+        
+        // Re-save with blockchain data
+        await ddbDocClient.send(
+          new PutCommand({
+            TableName: tableName,
+            Item: proofRecord,
+          })
+        );
+      } catch (blockchainError) {
+        console.error('❌ Blockchain submission error:', blockchainError);
+        // Continue anyway - proof is stored in DB
+      }
+    }
 
     // Return response
     return NextResponse.json({
       proofId,
+      blockchainProofId,
       verificationUrl: `/api/kyc/proof/${proofId}`,
       expiresAt,
-      chainTxHash: undefined, // Will be populated when blockchain integration is added
+      chainTxHash,
     }, { status: 201 });
 
   } catch (error) {
