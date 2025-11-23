@@ -2,11 +2,13 @@
 
 Quick setup guide to get zkVerify integration running in your TREZA application.
 
+**Note:** This guide references the deprecated ZKVerifyOracle pattern. For current implementation, use KYCVerifier and TrezaComplianceIntegration contracts.
+
 ## Prerequisites
 
 - Node.js 18+
-- Deployed `ZKVerifyOracle.sol` contract
-- Horizen Relayer API key
+- Deployed compliance contracts (KYCVerifier, TrezaComplianceIntegration)
+- Horizen Relayer API key (optional)
 
 ## Step 1: Install Dependencies
 
@@ -25,9 +27,10 @@ Create or update `.env.local` in `treza-app/`:
 ZKVERIFY_RELAYER_URL=https://relayer-api-testnet.horizenlabs.io/api/v1
 ZKVERIFY_RELAYER_API_KEY=your_api_key_here
 
-# Oracle Contract Configuration  
-ZKVERIFY_ORACLE_ADDRESS=0x... # Your deployed ZKVerifyOracle address
-ORACLE_PRIVATE_KEY=0x...       # Oracle node private key
+# Compliance Contract Configuration  
+KYC_VERIFIER_ADDRESS=0x...           # Your deployed KYCVerifier address
+COMPLIANCE_INTEGRATION_ADDRESS=0x... # Your deployed TrezaComplianceIntegration address
+VERIFIER_PRIVATE_KEY=0x...           # Authorized verifier private key
 
 # Ethereum RPC
 ETHEREUM_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your-key
@@ -39,36 +42,31 @@ ETHEREUM_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your-key
 2. **Mainnet**: Visit https://relayer.horizenlabs.io
 3. Create an account and generate an API key
 
-## Step 3: Deploy Oracle Contract (if not done)
+## Step 3: Deploy Compliance Contracts (if not done)
 
 ```bash
 cd ../treza-contracts
 
 # Edit hardhat.config.ts with your network settings
-npx hardhat run scripts/deploy-oracle.ts --network sepolia
+npx hardhat run scripts/compliance/deploy-compliance-contracts.ts --network sepolia
 
-# Note the deployed contract address
+# Note the deployed contract addresses
 ```
 
-## Step 4: Register as Oracle Node
+## Step 4: Register as Authorized Verifier
 
-You need to register your backend as an oracle node in the contract:
+You need to register your backend as an authorized verifier:
 
 ```bash
 # Using Hardhat console
 npx hardhat console --network sepolia
 
-> const Oracle = await ethers.getContractFactory("ZKVerifyOracle");
-> const oracle = await Oracle.attach("YOUR_ORACLE_ADDRESS");
-> await oracle.addOracle("YOUR_BACKEND_WALLET_ADDRESS", "https://yourdomain.com");
-> await oracle.stakeAsOracle({ value: ethers.parseEther("1.0") });
+> const KYCVerifier = await ethers.getContractFactory("KYCVerifier");
+> const verifier = await KYCVerifier.attach("YOUR_VERIFIER_ADDRESS");
+> await verifier.grantRole(await verifier.VERIFIER_ROLE(), "YOUR_BACKEND_WALLET_ADDRESS");
 ```
 
-Or use the deployment script:
-
-```bash
-npx hardhat run scripts/governance/setup-oracle.ts --network sepolia
-```
+Or use the deployment script which handles this automatically.
 
 ## Step 5: Update SDK Configuration
 
@@ -165,7 +163,7 @@ Expected response:
 cd treza-app
 pnpm dev
 
-# Terminal 2: Run your DeFi app
+# Terminal 2: Run your DeFi app (if applicable)
 cd treza-example-defi-app
 npm run dev
 ```
@@ -175,11 +173,10 @@ npm run dev
 1. **User initiates verification** in your DeFi app
 2. **User scans ID** with ZKPassport mobile app
 3. **ZKPassport generates proof** locally on device
-4. **Proof sent to your API** (`/api/zkverify/submit-proof`)
-5. **API forwards to Relayer** which submits to zkVerify chain
-6. **Poll for finalization** (`/api/zkverify/job-status`)
-7. **Submit attestation** to oracle contract (`/api/zkverify/submit-attestation`)
-8. **User is now compliant** on-chain
+4. **Proof sent to your API** (using TREZA SDK)
+5. **API submits to KYCVerifier contract**
+6. **Verification result stored on-chain**
+7. **User is now compliant** and can participate in governance/trading
 
 ## Troubleshooting
 
@@ -193,9 +190,9 @@ Make sure:
 ### "Contract rejected transaction"
 
 Common causes:
-- Oracle not registered: Call `addOracle()` first
-- Insufficient stake: Stake at least 1 ETH
-- Invalid signature: Check wallet address matches `ORACLE_PRIVATE_KEY`
+- Verifier not authorized: Grant VERIFIER_ROLE first
+- Invalid proof format: Check proof structure matches expected format
+- Invalid signature: Check wallet address matches `VERIFIER_PRIVATE_KEY`
 
 ### "Failed to submit proof"
 
@@ -214,14 +211,13 @@ Free tier limits:
 
 - [ ] Use paid RPC provider (Alchemy, Infura, QuickNode)
 - [ ] Store private keys in secure vault (AWS KMS, HashiCorp Vault)
-- [ ] Use mainnet Relayer API (`relayer-api-mainnet.horizenlabs.io`)
 - [ ] Deploy to L2 for lower gas costs (Arbitrum, Optimism)
-- [ ] Set up monitoring and alerting for oracle nodes
-- [ ] Configure multi-oracle consensus (3+ oracles)
-- [ ] Enable aggregation mode for batching proofs
-- [ ] Set up automatic oracle node failover
+- [ ] Set up monitoring and alerting for verification system
+- [ ] Configure proper access control for verifiers
 - [ ] Implement rate limiting on your API endpoints
 - [ ] Add proper error logging and monitoring
+- [ ] Set up automated proof verification monitoring
+- [ ] Implement backup verification strategies
 
 ## Next Steps
 

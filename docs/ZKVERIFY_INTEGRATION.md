@@ -10,45 +10,45 @@ The zkVerify integration allows TREZA to verify zero-knowledge proofs (from ZKPa
 
 ```
 
-‚  User DeFi App  ‚
-‚ (treza-example- ‚
-‚   defi-app)     ‚
-¬
-         ‚ 1. Generate ZK proof (ZKPassport)
+ï¿½  User DeFi App  ï¿½
+ï¿½ (treza-example- ï¿½
+ï¿½   defi-app)     ï¿½
+ï¿½
+         ï¿½ 1. Generate ZK proof (ZKPassport)
          
 
-‚  TREZA SDK      ‚
-‚ (treza-sdk)     ‚
-¬
-         ‚ 2. Submit via Next.js API
+ï¿½  TREZA SDK      ï¿½
+ï¿½ (treza-sdk)     ï¿½
+ï¿½
+         ï¿½ 2. Submit via Next.js API
          
 
-‚  Next.js API    ‚   treza-app/app/api/zkverify/*
-‚  (treza-app)    ‚
-¬
-         ‚ 3. Call Relayer API
+ï¿½  Next.js API    ï¿½   treza-app/app/api/zkverify/*
+ï¿½  (treza-app)    ï¿½
+ï¿½
+         ï¿½ 3. Call Relayer API
          
 
-‚ Horizen Relayer ‚
-‚  REST API       ‚
-¬
-         ‚ 4. Submit to zkVerify chain
+ï¿½ Horizen Relayer ï¿½
+ï¿½  REST API       ï¿½
+ï¿½
+         ï¿½ 4. Submit to zkVerify chain
          
 
-‚  zkVerify Chain ‚
-‚ (Proof verified)‚
-¬
-         ‚ 5. Return tx hash + status
+ï¿½  zkVerify Chain ï¿½
+ï¿½ (Proof verified)ï¿½
+ï¿½
+         ï¿½ 5. Return tx hash + status
          
 
-‚  Next.js API    ‚
-‚  Polls status   ‚
-¬
-         ‚ 6. When finalized
+ï¿½  Next.js API    ï¿½
+ï¿½  Polls status   ï¿½
+ï¿½
+         ï¿½ 6. When finalized
          
 
-‚ ZKVerifyOracle  ‚   Your contract on Ethereum
-‚  .sol           ‚
+ï¿½ KYCVerifier /   ï¿½   Your contracts on Ethereum
+ï¿½ Compliance      ï¿½
 
 ```
 
@@ -139,17 +139,18 @@ Registers a verification key with zkVerify. This should be done once per VK befo
 }
 ```
 
-### 4. Submit Attestation (`POST /api/zkverify/submit-attestation`)
+### 4. Submit Verification (`POST /api/kyc/submit-verification`)
 
-Submits a zkVerify attestation to your ZKVerifyOracle contract on Ethereum.
+**Deprecated:** The old oracle-based attestation endpoint has been replaced with direct KYC verification.
+
+Submit verification proofs directly to the KYCVerifier contract.
 
 **Request:**
 ```json
 {
-  "proofHash": "0x...",
-  "verified": true,
-  "zkVerifyBlockHash": "0x...",
-  "zkVerifyTxHash": "0x...",
+  "commitment": "0x...",
+  "proof": "0x...",
+  "publicInputs": ["isAdult:true", "country:US"],
   "userAddress": "0x..."
 }
 ```
@@ -158,10 +159,9 @@ Submits a zkVerify attestation to your ZKVerifyOracle contract on Ethereum.
 ```json
 {
   "success": true,
+  "proofId": "0x...",
   "transactionHash": "0x...",
-  "blockNumber": 12345678,
-  "gasUsed": "150000",
-  "message": "Attestation submitted to oracle successfully"
+  "blockNumber": 12345678
 }
 ```
 
@@ -219,14 +219,13 @@ const { jobId, optimisticVerify } = await bridge.submitToZKVerify(
 // 3. Wait for finalization
 const jobStatus = await bridge.waitForJobFinalization(jobId);
 
-// 4. Submit to oracle (optional)
-const proofHash = ethers.keccak256(ethers.toUtf8Bytes(proof + userAddress));
-const txHash = await bridge.submitAttestationToOracle(
-  proofHash,
-  true,
-  jobStatus,
+// 4. Submit to KYC verifier contract
+const proofId = await bridge.submitKYCProof({
+  commitment: proofHash,
+  proof: zkVerifyProof.proof,
+  publicInputs: zkVerifyProof.publicInputs,
   userAddress
-);
+});
 ```
 
 ## Environment Configuration
@@ -238,9 +237,10 @@ Create a `.env` file in `treza-app/`:
 ZKVERIFY_RELAYER_URL=https://relayer-api-testnet.horizenlabs.io/api/v1
 ZKVERIFY_RELAYER_API_KEY=your_api_key
 
-# Oracle Contract
-ZKVERIFY_ORACLE_ADDRESS=0x...
-ORACLE_PRIVATE_KEY=0x...
+# KYC Contracts
+KYC_VERIFIER_ADDRESS=0x...
+COMPLIANCE_INTEGRATION_ADDRESS=0x...
+VERIFIER_PRIVATE_KEY=0x...
 
 # Ethereum RPC
 ETHEREUM_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your-key
@@ -271,31 +271,32 @@ The Horizen Relayer supports multiple proof systems:
 
 Default in TREZA: **Groth16** (used by ZKPassport)
 
-## Oracle Integration
+## Contract Integration
 
-The `ZKVerifyOracle.sol` contract maintains a decentralized oracle network that:
+**Note:** The ZKVerifyOracle pattern has been deprecated in favor of direct KYC verification.
 
-1. **Receives attestations** from authorized oracle nodes
-2. **Requires multi-oracle consensus** (configurable)
-3. **Provides on-chain verification** via `isProofVerified(bytes32)`
+The `KYCVerifier.sol` contract provides on-chain KYC verification:
+
+1. **Receives ZK proofs** from authorized verifiers
+2. **Stores verification status** on-chain
+3. **Provides compliance checks** via `hasValidKYC(address)`
 4. **Enables composability** - other contracts can check compliance
 
-### Oracle Node Requirements
+### Authorized Verifier Requirements
 
-To run an oracle node:
+To become an authorized verifier:
 
-1. Register address in `ZKVerifyOracle.addOracle()`
-2. Stake minimum ETH (1 ETH by default)
-3. Monitor zkVerify finalization via Relayer API
-4. Submit attestations with signature
+1. Request VERIFIER_ROLE from contract admin
+2. Configure backend to sign proof submissions
+3. Submit proofs with valid cryptographic signatures
 
 ## Security Considerations
 
 1. **API Key Protection**: Store in environment variables, never commit
-2. **Oracle Private Key**: Use secure key management (AWS KMS, HashiCorp Vault)
+2. **Verifier Private Key**: Use secure key management (AWS KMS, HashiCorp Vault)
 3. **RPC Rate Limits**: Use paid RPC providers for production
-4. **Multi-Oracle Consensus**: Require multiple confirmations (3+ recommended)
-5. **Challenge Period**: ZKVerifyOracle has 1-day challenge period
+4. **Access Control**: Strictly manage VERIFIER_ROLE assignments
+5. **Proof Expiration**: Configure appropriate validity periods for use case
 
 ## Example: DeFi Integration
 

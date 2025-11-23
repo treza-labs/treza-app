@@ -5,7 +5,13 @@ const ORACLE_CONTRACT_ADDRESS = process.env.ZKVERIFY_ORACLE_ADDRESS;
 const ORACLE_PRIVATE_KEY = process.env.ORACLE_PRIVATE_KEY;
 const RPC_URL = process.env.ETHEREUM_RPC_URL;
 
-// ZKVerifyOracle ABI - minimal interface for submitVerificationResult
+/**
+ * DEPRECATED: This endpoint uses the old ZKVerifyOracle pattern.
+ * Use KYCVerifier contract directly instead.
+ * This file is kept for backward compatibility but should not be used in new implementations.
+ */
+
+// Legacy Oracle ABI - DEPRECATED
 const ORACLE_ABI = [
   "function submitVerificationResult(bytes32 proofHash, bool verified, bytes32 zkVerifyBlockHash, bytes signature) external",
   "function isProofVerified(bytes32 proofHash) external view returns (bool)",
@@ -21,10 +27,10 @@ interface SubmitAttestationRequest {
 }
 
 /**
- * Submit a zkVerify attestation to the ZKVerifyOracle contract
+ * DEPRECATED: Submit a zkVerify attestation to the ZKVerifyOracle contract
  * 
- * This endpoint is called after a proof has been finalized on zkVerify.
- * It submits the verification result to the oracle contract on Ethereum/L2.
+ * This endpoint is deprecated. Use the KYCVerifier contract directly instead.
+ * Kept for backward compatibility only.
  */
 export async function POST(request: NextRequest) {
   try {
