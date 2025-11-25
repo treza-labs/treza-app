@@ -4,7 +4,14 @@ info:
   description: |
     Comprehensive API for managing secure enclaves, GitHub integrations, and platform resources.
     
-    **New in v2.1.0:**
+    **New in v2.2.0:**
+    - 🔐 Zero-knowledge proof KYC verification endpoints
+    - 🎫 Submit, retrieve, and verify KYC proofs
+    - ⛓️ Blockchain integration for immutable proof storage
+    - ⏰ Automatic proof expiration (7 days)
+    - 📱 Device info tracking for mobile submissions
+    
+    **Previous in v2.1.0:**
     - 🛡️ Cryptographic attestation documents and verification
     - 📋 Developer integration tools and API endpoints
     - 🏦 Use case templates for Financial, Healthcare, and Enterprise
@@ -17,7 +24,7 @@ info:
     - 🐳 Docker Hub integration (search images, get tags)
     - 📊 Enhanced status tracking with real-time updates
     - 🎯 Individual enclave management endpoints
-  version: 2.1.0
+  version: 2.2.0
   contact:
     name: Treza Support
     url: https://trezalabs.com
@@ -1136,6 +1143,220 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /api/kyc/proof:
+    post:
+      summary: Submit ZK proof for KYC verification
+      description: |
+        Submit a zero-knowledge proof for KYC verification. The proof is validated, stored in DynamoDB,
+        and optionally submitted to the blockchain for immutable verification.
+        
+        **Authentication:** None required (open endpoint)
+        
+        **Rate Limiting:** Recommended 10 requests/hour per IP
+        
+        **Security:** Cryptographic proof validation prevents fake submissions
+      tags:
+        - KYC
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - proof
+              properties:
+                userId:
+                  type: string
+                  description: User identifier
+                  example: "user_abc123"
+                proof:
+                  $ref: '#/components/schemas/ZKProof'
+                deviceInfo:
+                  type: object
+                  properties:
+                    platform:
+                      type: string
+                      example: "iOS"
+                    version:
+                      type: string
+                      example: "17.0"
+      responses:
+        '201':
+          description: Proof submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proofId:
+                    type: string
+                    format: uuid
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                    description: "Unique identifier for the submitted proof"
+                  blockchainProofId:
+                    type: string
+                    example: "0x1234567890abcdef"
+                    description: "On-chain proof identifier (if blockchain submission succeeded)"
+                  verificationUrl:
+                    type: string
+                    format: uri
+                    example: "/api/kyc/proof/550e8400-e29b-41d4-a716-446655440000"
+                    description: "URL to verify the proof"
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    example: "2024-12-22T10:30:00Z"
+                    description: "Proof expiration timestamp (7 days from submission)"
+                  chainTxHash:
+                    type: string
+                    example: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+                    description: "Blockchain transaction hash (if blockchain submission succeeded)"
+        '400':
+          description: Invalid request or proof verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  value:
+                    error: "Missing required fields: userId and proof"
+                invalidFormat:
+                  value:
+                    error: "Invalid proof format"
+                verificationFailed:
+                  value:
+                    error: "Proof verification failed"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/kyc/proof/{proofId}:
+    get:
+      summary: Get proof details
+      description: Retrieve details for a specific KYC proof by ID. By default returns public data only.
+      tags:
+        - KYC
+      parameters:
+        - name: proofId
+          in: path
+          required: true
+          description: Proof ID (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+        - name: includePrivate
+          in: query
+          required: false
+          description: Include private proof data (requires authentication)
+          schema:
+            type: boolean
+            default: false
+            example: true
+      responses:
+        '200':
+          description: Proof details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofDetails'
+        '404':
+          description: Proof not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/kyc/proof/{proofId}/verify:
+    get:
+      summary: Verify a proof by ID
+      description: Verify the validity of a KYC proof, checking expiration and blockchain status
+      tags:
+        - KYC
+      parameters:
+        - name: proofId
+          in: path
+          required: true
+          description: Proof ID (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proofId:
+                    type: string
+                    format: uuid
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                  isValid:
+                    type: boolean
+                    example: true
+                    description: "Whether the proof is valid and not expired"
+                  publicInputs:
+                    type: array
+                    items:
+                      type: string
+                    example: ["0x1234567890abcdef", "0xfedcba0987654321"]
+                    description: "Public inputs used in the proof"
+                  verifiedAt:
+                    type: string
+                    format: date-time
+                    example: "2024-12-15T10:30:00Z"
+                    description: "Timestamp when proof was originally verified"
+                  chainVerified:
+                    type: boolean
+                    example: true
+                    description: "Whether the proof was verified on blockchain"
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    example: "2024-12-22T10:30:00Z"
+                    description: "Proof expiration timestamp"
+        '404':
+          description: Proof not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '410':
+          description: Proof expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Proof expired"
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    example: "2024-12-15T10:30:00Z"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /api/tasks:
     get:
       summary: Get tasks
@@ -1608,6 +1829,142 @@ components:
           example: "2024-01-15T12:30:00Z"
           description: "Timestamp of last usage (optional)"
     
+    ZKProof:
+      type: object
+      required:
+        - commitment
+        - proof
+        - publicInputs
+        - timestamp
+        - algorithm
+      properties:
+        commitment:
+          type: string
+          minLength: 64
+          maxLength: 64
+          pattern: '^[0-9a-fA-F]{64}$'
+          example: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+          description: "64-character hex commitment hash"
+        proof:
+          type: string
+          minLength: 65
+          example: "0x1234567890abcdef...proof_data_here...987654321fedcba"
+          description: "Zero-knowledge proof data (minimum 65 characters)"
+        publicInputs:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          example: ["0x1234567890abcdef", "0xfedcba0987654321"]
+          description: "Public inputs used in the ZK proof"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-12-15T10:30:00Z"
+          description: "Proof generation timestamp (must be within 1 hour)"
+        algorithm:
+          type: string
+          enum: [Pedersen-SHA256]
+          example: "Pedersen-SHA256"
+          description: "Cryptographic algorithm used for the proof"
+
+    ProofDetails:
+      type: object
+      properties:
+        proofId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+          description: "Unique proof identifier"
+        commitment:
+          type: string
+          example: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+          description: "Commitment hash"
+        publicInputs:
+          type: array
+          items:
+            type: string
+          example: ["0x1234567890abcdef", "0xfedcba0987654321"]
+          description: "Public inputs"
+        algorithm:
+          type: string
+          example: "Pedersen-SHA256"
+          description: "Algorithm used"
+        verifiedAt:
+          type: string
+          format: date-time
+          example: "2024-12-15T10:30:00Z"
+          description: "Verification timestamp"
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2024-12-22T10:30:00Z"
+          description: "Expiration timestamp (7 days after verification)"
+        proof:
+          type: string
+          example: "0x1234567890abcdef...proof_signature_here..."
+          description: "Proof signature (only included when includePrivate=true)"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-12-15T10:30:00Z"
+          description: "Original proof timestamp (only included when includePrivate=true)"
+      required: [proofId, commitment, publicInputs, algorithm, verifiedAt, expiresAt]
+
+    ProofRecord:
+      type: object
+      description: Internal proof record stored in DynamoDB
+      properties:
+        proofId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        userId:
+          type: string
+          example: "user_abc123"
+        commitment:
+          type: string
+          example: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        proof:
+          type: string
+          example: "0x1234567890abcdef...proof_data..."
+        publicInputs:
+          type: array
+          items:
+            type: string
+          example: ["0x1234567890abcdef"]
+        algorithm:
+          type: string
+          example: "Pedersen-SHA256"
+        status:
+          type: string
+          enum: [verified, pending, failed, expired]
+          example: "verified"
+        verifiedAt:
+          type: string
+          format: date-time
+          example: "2024-12-15T10:30:00Z"
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2024-12-22T10:30:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-12-15T10:30:00Z"
+        devicePlatform:
+          type: string
+          example: "iOS"
+          description: "Device platform (optional)"
+        deviceVersion:
+          type: string
+          example: "17.0"
+          description: "Device version (optional)"
+        chainTxHash:
+          type: string
+          example: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+          description: "Blockchain transaction hash (optional)"
+
     Error:
       type: object
       properties:
@@ -2000,6 +2357,8 @@ tags:
     description: Secure enclave management and lifecycle control
   - name: Attestation
     description: Cryptographic attestation and verification services
+  - name: KYC
+    description: Zero-knowledge proof KYC verification and management
   - name: Logs
     description: Enclave logs and monitoring
   - name: Docker
