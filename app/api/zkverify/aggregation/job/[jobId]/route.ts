@@ -15,10 +15,10 @@ const RELAYER_API_KEY = process.env.ZKVERIFY_RELAYER_API_KEY;
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    const { jobId } = params;
+    const { jobId } = await params;
 
     if (!jobId) {
       return NextResponse.json(
@@ -81,7 +81,7 @@ export async function GET(
     
     if (error.response?.status === 404) {
       return NextResponse.json(
-        { error: 'Job not found', jobId: params.jobId },
+        { error: 'Job not found', jobId: (await params).jobId },
         { status: 404 }
       );
     }

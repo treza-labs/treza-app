@@ -99,8 +99,8 @@ function getClientIP(request: NextRequest): string {
     return cfConnectingIP;
   }
 
-  // Fallback to connection remote address or anonymous
-  return request.ip || 'anonymous';
+  // Fallback to anonymous (request.ip removed in Next.js 15)
+  return 'anonymous';
 }
 
 // Configure which routes the middleware should run on

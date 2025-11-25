@@ -22,10 +22,10 @@ const RELAYER_API_KEY = process.env.ZKVERIFY_RELAYER_API_KEY;
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { aggregationId: string } }
+  { params }: { params: Promise<{ aggregationId: string }> }
 ) {
   try {
-    const { aggregationId } = params;
+    const { aggregationId } = await params;
 
     if (!aggregationId) {
       return NextResponse.json(
@@ -78,7 +78,7 @@ export async function GET(
     
     if (error.response?.status === 404) {
       return NextResponse.json(
-        { error: 'Aggregation not found', aggregationId: params.aggregationId },
+        { error: 'Aggregation not found', aggregationId: (await params).aggregationId },
         { status: 404 }
       );
     }

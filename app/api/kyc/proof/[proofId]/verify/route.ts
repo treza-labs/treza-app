@@ -20,10 +20,10 @@ const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { proofId: string } }
+  { params }: { params: Promise<{ proofId: string }> }
 ) {
   try {
-    const { proofId } = params;
+    const { proofId } = await params;
 
     // Fetch proof from DynamoDB
     const tableName = process.env.DYNAMODB_TABLE_NAME || 'treza-kyc-proofs';
